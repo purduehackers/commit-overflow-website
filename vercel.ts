@@ -1,43 +1,33 @@
-import { defineConfig } from "@vercel/config";
+import { routes, type VercelConfig } from "@vercel/config/v1";
 
-export default defineConfig({
-	regions: ["iad1"],
-	headers: [
-		{
-			source: "/api/(.*)",
-			headers: [
-				{
-					key: "Cache-Control",
-					value: "public, max-age=10, s-maxage=60, stale-while-revalidate=300",
-				},
-			],
-		},
-		{
-			source: "/_astro/(.*)",
-			headers: [
-				{
-					key: "Cache-Control",
-					value: "public, max-age=31536000, immutable",
-				},
-			],
-		},
-		{
-			source: "/favicon.svg",
-			headers: [
-				{
-					key: "Cache-Control",
-					value: "public, max-age=86400",
-				},
-			],
-		},
-		{
-			source: "/manifest.json",
-			headers: [
-				{
-					key: "Cache-Control",
-					value: "public, max-age=86400",
-				},
-			],
-		},
-	],
-});
+export const config: VercelConfig = {
+  framework: "astro",
+  cleanUrls: true,
+  trailingSlash: false,
+
+  headers: [
+    routes.cacheControl("/api/(.*)", {
+      public: true,
+      maxAge: "10s",
+      sMaxAge: "60s",
+      staleWhileRevalidate: "5min",
+    }),
+    routes.cacheControl("/_astro/(.*)", {
+      public: true,
+      maxAge: "1year",
+      immutable: true,
+    }),
+    routes.cacheControl("/favicon.svg", {
+      public: true,
+      maxAge: "1day",
+    }),
+    routes.cacheControl("/manifest.json", {
+      public: true,
+      maxAge: "1day",
+    }),
+    routes.header("/(.*)", [
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+    ]),
+  ],
+};

@@ -1,6 +1,5 @@
+import { DISCORD_BOT_TOKEN } from "astro:env/server";
 import { cacheGet, cacheSet, TTL } from "./redis";
-
-const DISCORD_BOT_TOKEN = import.meta.env.DISCORD_BOT_TOKEN;
 
 const DISCORD_API = "https://discord.com/api/v10";
 const FETCH_TIMEOUT_MS = 10000;

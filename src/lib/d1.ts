@@ -1,6 +1,4 @@
-const D1_ACCOUNT_ID = import.meta.env.D1_ACCOUNT_ID;
-const D1_DATABASE_ID = import.meta.env.D1_DATABASE_ID;
-const D1_API_TOKEN = import.meta.env.D1_API_TOKEN;
+import { D1_ACCOUNT_ID, D1_API_TOKEN, D1_DATABASE_ID } from "astro:env/server";
 
 const D1_API_URL = `https://api.cloudflare.com/client/v4/accounts/${D1_ACCOUNT_ID}/d1/database/${D1_DATABASE_ID}/query`;
 const FETCH_TIMEOUT_MS = 10000;
