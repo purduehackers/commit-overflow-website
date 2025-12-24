@@ -133,6 +133,29 @@ export async function getForumThreads(): Promise<DiscordThread[]> {
     }
 }
 
+interface MessageSnapshotFields {
+    content: string;
+    attachments: { url: string; content_type?: string }[];
+    embeds: unknown[];
+    timestamp: string;
+    edited_timestamp: string | null;
+    flags: number;
+    mentions: unknown[];
+    mention_roles: string[];
+    type: number;
+}
+
+interface MessageSnapshot {
+    message: MessageSnapshotFields;
+}
+
+interface MessageReference {
+    type?: number; // 0 = reply, 1 = forward
+    message_id?: string;
+    channel_id?: string;
+    guild_id?: string;
+}
+
 interface DiscordMessage {
     id: string;
     content: string;
@@ -141,6 +164,8 @@ interface DiscordMessage {
         username: string;
     };
     attachments: { url: string; content_type?: string }[];
+    message_reference?: MessageReference;
+    message_snapshots?: MessageSnapshot[];
 }
 
 export async function getDiscordMessage(
