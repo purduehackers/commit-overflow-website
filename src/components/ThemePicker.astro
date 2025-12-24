@@ -1,0 +1,44 @@
+---
+---
+<div class="theme-picker">
+  <span class="theme-label">theme:</span>
+  <button class="theme-btn" data-theme="light">light</button>
+  <span class="theme-label">/</span>
+  <button class="theme-btn" data-theme="dark">dark</button>
+  <span class="theme-label">/</span>
+  <button class="theme-btn" data-theme="auto">auto</button>
+</div>
+
+<script>
+  function initTheme() {
+    const stored = localStorage.getItem('theme');
+    const theme = stored || 'auto';
+    applyTheme(theme);
+    updateButtons(theme);
+  }
+
+  function applyTheme(theme: string) {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    if (theme === 'light' || theme === 'dark') {
+      root.classList.add(theme);
+    }
+  }
+
+  function updateButtons(theme: string) {
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.getAttribute('data-theme') === theme);
+    });
+  }
+
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const theme = btn.getAttribute('data-theme') || 'auto';
+      localStorage.setItem('theme', theme);
+      applyTheme(theme);
+      updateButtons(theme);
+    });
+  });
+
+  initTheme();
+</script>

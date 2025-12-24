@@ -11,14 +11,54 @@
     --font: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace;
 }
 
+/* System preference (default) */
 @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not(.light):not(.dark) {
         --bg: #0d0d0d;
         --fg: #e0e0e0;
         --accent: #00cc00;
         --muted: #888888;
         --border: #333333;
     }
+}
+
+/* Explicit dark mode */
+:root.dark {
+    --bg: #0d0d0d;
+    --fg: #e0e0e0;
+    --accent: #00cc00;
+    --muted: #888888;
+    --border: #333333;
+}
+
+/* Theme picker styles */
+.theme-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    font-size: 0.85rem;
+}
+
+.theme-label {
+    color: var(--muted);
+}
+
+.theme-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0;
+}
+
+.theme-btn:hover {
+    color: var(--fg);
+}
+
+.theme-btn.active {
+    color: var(--accent);
 }
 
 * {
