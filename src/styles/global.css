@@ -11,6 +11,16 @@
     --font: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace;
 }
 
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #0d0d0d;
+        --fg: #e0e0e0;
+        --accent: #00cc00;
+        --muted: #888888;
+        --border: #333333;
+    }
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
