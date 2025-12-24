@@ -10,9 +10,7 @@ export default defineConfig({
     site: "https://commit.purduehackers.com",
     trailingSlash: "never",
     output: "server",
-  adapter: vercel({
-    isr: true,
-    }),
+  adapter: vercel(),
     integrations: [react(), tailwind(), sitemap(), gabAstroCompress()],
     prefetch: {
         prefetchAll: true,
