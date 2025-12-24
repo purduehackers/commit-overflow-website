@@ -33,12 +33,18 @@ export function Progress() {
                     className="section-header"
                     style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
                 >
-                    <h2 id="progress-heading-error" style={{ font: "inherit", margin: 0 }}>EVENT PROGRESS</h2>
+                    <h2 id="progress-heading-error" style={{ font: "inherit", margin: 0 }}>
+                        EVENT PROGRESS
+                    </h2>
                     <span className="muted" style={{ color: "var(--error, #ff6b6b)" }}>
                         ERROR
                     </span>
                 </div>
-                <pre className="progress-bar" style={{ color: "var(--error, #ff6b6b)" }} role="alert">
+                <pre
+                    className="progress-bar"
+                    style={{ color: "var(--error, #ff6b6b)" }}
+                    role="alert"
+                >
                     ╳ Failed to load progress data.{" "}
                     <button
                         onClick={() => mutate()}
@@ -62,12 +68,18 @@ export function Progress() {
 
     if (!data) {
         return (
-            <section className="progress-section" aria-labelledby="progress-heading-loading" aria-busy="true">
+            <section
+                className="progress-section"
+                aria-labelledby="progress-heading-loading"
+                aria-busy="true"
+            >
                 <div
                     className="section-header"
                     style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
                 >
-                    <h2 id="progress-heading-loading" style={{ font: "inherit", margin: 0 }}>EVENT PROGRESS</h2>
+                    <h2 id="progress-heading-loading" style={{ font: "inherit", margin: 0 }}>
+                        EVENT PROGRESS
+                    </h2>
                     <span className="muted skeleton">░░ days left</span>
                 </div>
                 <pre
@@ -97,7 +109,9 @@ export function Progress() {
                 className="section-header"
                 style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
             >
-                <h2 id="progress-heading" style={{ font: "inherit", margin: 0 }}>EVENT PROGRESS</h2>
+                <h2 id="progress-heading" style={{ font: "inherit", margin: 0 }}>
+                    EVENT PROGRESS
+                </h2>
                 <span className="muted">{daysRemaining} days left</span>
             </div>
             <pre

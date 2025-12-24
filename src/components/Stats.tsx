@@ -34,7 +34,9 @@ export function Stats() {
                     className="section-header"
                     style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
                 >
-                    <h2 id="stats-heading-error" style={{ font: "inherit", margin: 0 }}>STATS</h2>
+                    <h2 id="stats-heading-error" style={{ font: "inherit", margin: 0 }}>
+                        STATS
+                    </h2>
                     <span className="muted" style={{ color: "var(--error, #ff6b6b)" }}>
                         ERROR
                     </span>
@@ -77,12 +79,18 @@ export function Stats() {
 
     if (!data) {
         return (
-            <section className="stats-section" aria-labelledby="stats-heading-loading" aria-busy="true">
+            <section
+                className="stats-section"
+                aria-labelledby="stats-heading-loading"
+                aria-busy="true"
+            >
                 <div
                     className="section-header"
                     style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
                 >
-                    <h2 id="stats-heading-loading" style={{ font: "inherit", margin: 0 }}>STATS</h2>
+                    <h2 id="stats-heading-loading" style={{ font: "inherit", margin: 0 }}>
+                        STATS
+                    </h2>
                     <span className="muted">updated ░s ago</span>
                 </div>
                 <dl className="stats-tickers skeleton">
@@ -115,7 +123,9 @@ export function Stats() {
                 className="section-header"
                 style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
             >
-                <h2 id="stats-heading" style={{ font: "inherit", margin: 0 }}>STATS</h2>
+                <h2 id="stats-heading" style={{ font: "inherit", margin: 0 }}>
+                    STATS
+                </h2>
                 <span className="muted">updated {formatElapsedTime(secondsElapsed)}</span>
             </div>
             <dl className="stats-tickers">

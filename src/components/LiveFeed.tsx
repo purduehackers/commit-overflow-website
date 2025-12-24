@@ -34,6 +34,23 @@ function isAudio(type: string): boolean {
     return type.startsWith("audio/");
 }
 
+function processLinksInHtml(html: string): string {
+    // Add rel attributes to existing anchor tags
+    let processed = html.replace(
+        /<a\s+([^>]*?)href=/gi,
+        '<a $1rel="nofollow noopener noreferrer" target="_blank" href=',
+    );
+
+    // Convert plain text URLs to anchor tags (URLs not already inside href="...")
+    const urlRegex = /(?<!href=["'])(?<!">)(https?:\/\/[^\s<>"']+)/gi;
+    processed = processed.replace(
+        urlRegex,
+        '<a href="$1" rel="nofollow noopener noreferrer" target="_blank">$1</a>',
+    );
+
+    return processed;
+}
+
 interface LightboxState {
     isOpen: boolean;
     attachments: Attachment[];
@@ -61,7 +78,7 @@ function Lightbox({ attachments, currentIndex, onClose, onPrev, onNext }: Lightb
             // Focus trap: cycle through focusable elements
             if (e.key === "Tab" && dialogRef.current) {
                 const focusableElements = dialogRef.current.querySelectorAll<HTMLElement>(
-                    'button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+                    'button:not([disabled]), [tabindex]:not([tabindex="-1"])',
                 );
                 const firstElement = focusableElements[0];
                 const lastElement = focusableElements[focusableElements.length - 1];
@@ -230,7 +247,11 @@ export function LiveFeed() {
 
     const triggerElementRef = useRef<HTMLElement | null>(null);
 
-    const openLightbox = (attachments: Attachment[], clickedIndex: number, triggerElement: HTMLElement) => {
+    const openLightbox = (
+        attachments: Attachment[],
+        clickedIndex: number,
+        triggerElement: HTMLElement,
+    ) => {
         triggerElementRef.current = triggerElement;
         const imageAttachments = attachments.filter((a) => isImage(a.type));
         setLightbox({
@@ -266,7 +287,9 @@ export function LiveFeed() {
         return (
             <section className="feed-section" aria-labelledby="feed-heading-error">
                 <div className="feed-header" style={{ marginBottom: "1.25rem" }}>
-                    <h2 id="feed-heading-error" style={{ font: "inherit", margin: 0 }}>RECENT ACTIVITY</h2>
+                    <h2 id="feed-heading-error" style={{ font: "inherit", margin: 0 }}>
+                        RECENT ACTIVITY
+                    </h2>
                 </div>
                 <pre style={{ color: "var(--error, #ff6b6b)" }} role="alert">
                     ╳ Failed to load activity feed.{" "}
@@ -317,9 +340,15 @@ export function LiveFeed() {
             ));
 
         return (
-            <section className="feed-section" aria-labelledby="feed-heading-loading" aria-busy="true">
+            <section
+                className="feed-section"
+                aria-labelledby="feed-heading-loading"
+                aria-busy="true"
+            >
                 <div className="feed-header" style={{ marginBottom: "1.25rem" }}>
-                    <h2 id="feed-heading-loading" style={{ font: "inherit", margin: 0 }}>RECENT ACTIVITY</h2>
+                    <h2 id="feed-heading-loading" style={{ font: "inherit", margin: 0 }}>
+                        RECENT ACTIVITY
+                    </h2>
                 </div>
                 <div className="feed-list">{skeletonItems}</div>
             </section>
@@ -331,7 +360,9 @@ export function LiveFeed() {
     return (
         <section className="feed-section" aria-labelledby="feed-heading">
             <div className="feed-header" style={{ marginBottom: "1.25rem" }}>
-                <h2 id="feed-heading" style={{ font: "inherit", margin: 0 }}>RECENT ACTIVITY</h2>
+                <h2 id="feed-heading" style={{ font: "inherit", margin: 0 }}>
+                    RECENT ACTIVITY
+                </h2>
             </div>
             <div className="feed-list">
                 {recentCommits.length === 0 ? (
@@ -394,7 +425,7 @@ export function LiveFeed() {
                                                 style={{ flex: 1 }}
                                                 className="markdown-content"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: commit.messageHtml,
+                                                    __html: processLinksInHtml(commit.messageHtml),
                                                 }}
                                             />
                                         </div>
@@ -430,70 +461,70 @@ export function LiveFeed() {
                                                                 onClick={(e) => e.stopPropagation()}
                                                             />
                                                         );
-                                                                    } else if (isImage(attachment.type)) {
-                                                                        const currentImageIndex = imageIndex;
-                                                                        imageIndex++;
-                                                                        return (
-                                                                            <button
-                                                                                key={idx}
-                                                                                type="button"
-                                                                                aria-label={`View attachment ${currentImageIndex + 1} in fullscreen`}
-                                                                                onClick={(e) => {
-                                                                                    e.preventDefault();
-                                                                                    e.stopPropagation();
-                                                                                    openLightbox(
-                                                                                        commit.attachments,
-                                                                                        currentImageIndex,
-                                                                                        e.currentTarget,
-                                                                                    );
-                                                                                }}
-                                                                                style={{
-                                                                                    padding: 0,
-                                                                                    border: "1px solid var(--border)",
-                                                                                    borderRadius: "4px",
-                                                                                    background: "none",
-                                                                                    cursor: "pointer",
-                                                                                }}
-                                                                            >
-                                                                                <img
-                                                                                    src={attachment.url}
-                                                                                    alt={`Commit attachment ${currentImageIndex + 1} from ${commit.username}`}
-                                                                                    width={200}
-                                                                                    height={150}
-                                                                                    loading="lazy"
-                                                                                    decoding="async"
-                                                                                    style={{
-                                                                                        maxWidth: "200px",
-                                                                                        maxHeight: "150px",
-                                                                                        width: "auto",
-                                                                                        height: "auto",
-                                                                                        aspectRatio: "4 / 3",
-                                                                                        objectFit: "cover",
-                                                                                        borderRadius: "4px",
-                                                                                        backgroundColor:
-                                                                                            "var(--border)",
-                                                                                        display: "block",
-                                                                                    }}
-                                                                                />
-                                                                            </button>
-                                                                        );
-                                                                    } else if (isAudio(attachment.type)) {
-                                                                        return (
-                                                                            <audio
-                                                                                key={idx}
-                                                                                src={attachment.url}
-                                                                                controls
-                                                                                preload="metadata"
-                                                                                aria-label={`Audio attachment from ${commit.username}`}
-                                                                                style={{
-                                                                                    maxWidth: "250px",
-                                                                                    height: "40px",
-                                                                                    borderRadius: "4px",
-                                                                                }}
-                                                                                onClick={(e) => e.stopPropagation()}
-                                                                            />
-                                                                        );
-                                                                    } else {
+                                                    } else if (isImage(attachment.type)) {
+                                                        const currentImageIndex = imageIndex;
+                                                        imageIndex++;
+                                                        return (
+                                                            <button
+                                                                key={idx}
+                                                                type="button"
+                                                                aria-label={`View attachment ${currentImageIndex + 1} in fullscreen`}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    openLightbox(
+                                                                        commit.attachments,
+                                                                        currentImageIndex,
+                                                                        e.currentTarget,
+                                                                    );
+                                                                }}
+                                                                style={{
+                                                                    padding: 0,
+                                                                    border: "1px solid var(--border)",
+                                                                    borderRadius: "4px",
+                                                                    background: "none",
+                                                                    cursor: "pointer",
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={attachment.url}
+                                                                    alt={`Commit attachment ${currentImageIndex + 1} from ${commit.username}`}
+                                                                    width={200}
+                                                                    height={150}
+                                                                    loading="lazy"
+                                                                    decoding="async"
+                                                                    style={{
+                                                                        maxWidth: "200px",
+                                                                        maxHeight: "150px",
+                                                                        width: "auto",
+                                                                        height: "auto",
+                                                                        aspectRatio: "4 / 3",
+                                                                        objectFit: "cover",
+                                                                        borderRadius: "4px",
+                                                                        backgroundColor:
+                                                                            "var(--border)",
+                                                                        display: "block",
+                                                                    }}
+                                                                />
+                                                            </button>
+                                                        );
+                                                    } else if (isAudio(attachment.type)) {
+                                                        return (
+                                                            <audio
+                                                                key={idx}
+                                                                src={attachment.url}
+                                                                controls
+                                                                preload="metadata"
+                                                                aria-label={`Audio attachment from ${commit.username}`}
+                                                                style={{
+                                                                    maxWidth: "250px",
+                                                                    height: "40px",
+                                                                    borderRadius: "4px",
+                                                                }}
+                                                                onClick={(e) => e.stopPropagation()}
+                                                            />
+                                                        );
+                                                    } else {
                                                         return (
                                                             <span
                                                                 key={idx}

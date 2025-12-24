@@ -88,12 +88,22 @@ async function restoreDiscordSyntax(html: string): Promise<string> {
         const role = roleResults[i];
         const name = escapeHtml(role?.name || "role");
         const color = role?.color ? `#${role.color.toString(16).padStart(6, "0")}` : null;
-        const style = color && color !== "#000000" ? ` style="color: ${color}; background: ${color}20"` : "";
-        result = result.replace(match[0], `<span class="mention mention-role"${style}>@${name}</span>`);
+        const style =
+            color && color !== "#000000" ? ` style="color: ${color}; background: ${color}20"` : "";
+        result = result.replace(
+            match[0],
+            `<span class="mention mention-role"${style}>@${name}</span>`,
+        );
     });
 
-    result = result.replace(/%%EMOJI_ANIMATED_(\w+)_(\d+)%%/g, '<img src="https://cdn.discordapp.com/emojis/$2.gif" alt=":$1:" class="discord-emoji" />');
-    result = result.replace(/%%EMOJI_STATIC_(\w+)_(\d+)%%/g, '<img src="https://cdn.discordapp.com/emojis/$2.png" alt=":$1:" class="discord-emoji" />');
+    result = result.replace(
+        /%%EMOJI_ANIMATED_(\w+)_(\d+)%%/g,
+        '<img src="https://cdn.discordapp.com/emojis/$2.gif" alt=":$1:" class="discord-emoji" />',
+    );
+    result = result.replace(
+        /%%EMOJI_STATIC_(\w+)_(\d+)%%/g,
+        '<img src="https://cdn.discordapp.com/emojis/$2.png" alt=":$1:" class="discord-emoji" />',
+    );
     result = result.replace(/%%TIMESTAMP_(\d+)%%/g, (_, ts) => {
         const date = new Date(parseInt(ts) * 1000);
         return `<time>${date.toLocaleString()}</time>`;
@@ -323,9 +333,7 @@ async function computeStats(): Promise<StatsResponse> {
         queryD1<CommitRow>(
             "SELECT user_id, committed_at, message_id FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
         ),
-        queryD1<ProfileRow>(
-            "SELECT user_id, timezone, thread_id FROM commit_overflow_profiles",
-        ),
+        queryD1<ProfileRow>("SELECT user_id, timezone, thread_id FROM commit_overflow_profiles"),
         queryD1<UserRow>("SELECT id, discord_username FROM users"),
         getCommitOverflowStats(),
     ]);
@@ -368,10 +376,7 @@ async function computeStats(): Promise<StatsResponse> {
 
     for (const [odId, timestamps] of userCommits) {
         const timezone = timezoneMap.get(odId) || DEFAULT_TIMEZONE;
-        const { currentStreak, longestStreak, totalDays } = calculateStreaks(
-            timestamps,
-            timezone,
-        );
+        const { currentStreak, longestStreak, totalDays } = calculateStreaks(timestamps, timezone);
 
         const username = userMap.get(odId) || "Unknown";
 
@@ -410,9 +415,7 @@ async function computeStats(): Promise<StatsResponse> {
             const username = userMap.get(commit.user_id) || "Unknown";
             const avatarUrl = `/api/avatar/${commit.user_id}.png`;
             const threadId = profileMap.get(commit.user_id) || "";
-            const message = threadId
-                ? await getDiscordMessage(threadId, commit.message_id)
-                : null;
+            const message = threadId ? await getDiscordMessage(threadId, commit.message_id) : null;
             const rawMessageText = message?.content || "";
             const escaped = escapeDiscordSyntax(rawMessageText);
             const truncatedText = smartTruncate(escaped, 50);
@@ -455,11 +458,7 @@ async function computeStats(): Promise<StatsResponse> {
 
 export const GET: APIRoute = async () => {
     try {
-        const stats = await cached<StatsResponse>(
-            "stats:response",
-            computeStats,
-            STATS_CACHE_TTL,
-        );
+        const stats = await cached<StatsResponse>("stats:response", computeStats, STATS_CACHE_TTL);
 
         return new Response(JSON.stringify(stats), {
             status: 200,

@@ -20,7 +20,10 @@ export const GET: APIRoute = async ({ params, request }) => {
     }
 
     if (!DISCORD_ID_PATTERN.test(id)) {
-        return jsonError("Invalid Discord user ID format. Expected 17-19 digit numeric string.", 400);
+        return jsonError(
+            "Invalid Discord user ID format. Expected 17-19 digit numeric string.",
+            400,
+        );
     }
 
     try {
@@ -56,7 +59,8 @@ export const GET: APIRoute = async ({ params, request }) => {
             status: 200,
             headers: {
                 "Content-Type": "image/png",
-                "Cache-Control": "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+                "Cache-Control":
+                    "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
                 ETag: etag,
             },
         });

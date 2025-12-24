@@ -83,7 +83,9 @@ export function Leaderboard() {
                         <tr>
                             <th scope="col">Rank</th>
                             <th scope="col">Hacker</th>
-                            <th scope="col" className="sorted">Commits</th>
+                            <th scope="col" className="sorted">
+                                Commits
+                            </th>
                             <th scope="col">Days</th>
                             <th scope="col">Streak</th>
                         </tr>
@@ -112,7 +114,9 @@ export function Leaderboard() {
             <div className="leaderboard-header">
                 <h2>TOP HACKERS</h2>
                 <div className="sort-toggle" role="group" aria-label="Sort leaderboard by">
-                    <span className="sort-label" id="sort-label">sort by:</span>
+                    <span className="sort-label" id="sort-label">
+                        sort by:
+                    </span>
                     <button
                         className={`sort-btn ${sortBy === "commits" ? "active" : ""}`}
                         onClick={() => setSortBy("commits")}
@@ -144,9 +148,27 @@ export function Leaderboard() {
                     <tr>
                         <th scope="col">Rank</th>
                         <th scope="col">Hacker</th>
-                        <th scope="col" className={sortBy === "commits" ? "sorted" : ""} aria-sort={sortBy === "commits" ? "descending" : "none"}>Commits</th>
-                        <th scope="col" className={sortBy === "days" ? "sorted" : ""} aria-sort={sortBy === "days" ? "descending" : "none"}>Days</th>
-                        <th scope="col" className={sortBy === "streak" ? "sorted" : ""} aria-sort={sortBy === "streak" ? "descending" : "none"}>Streak</th>
+                        <th
+                            scope="col"
+                            className={sortBy === "commits" ? "sorted" : ""}
+                            aria-sort={sortBy === "commits" ? "descending" : "none"}
+                        >
+                            Commits
+                        </th>
+                        <th
+                            scope="col"
+                            className={sortBy === "days" ? "sorted" : ""}
+                            aria-sort={sortBy === "days" ? "descending" : "none"}
+                        >
+                            Days
+                        </th>
+                        <th
+                            scope="col"
+                            className={sortBy === "streak" ? "sorted" : ""}
+                            aria-sort={sortBy === "streak" ? "descending" : "none"}
+                        >
+                            Streak
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
