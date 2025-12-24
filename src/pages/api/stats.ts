@@ -334,7 +334,9 @@ async function computeStats(): Promise<StatsResponse> {
         queryD1<CommitRow>(
             "SELECT user_id, committed_at, message_id, is_private FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
         ),
-        queryD1<ProfileRow>("SELECT user_id, timezone, thread_id FROM commit_overflow_profiles WHERE is_private = 0"),
+        queryD1<ProfileRow>(
+            "SELECT user_id, timezone, thread_id FROM commit_overflow_profiles WHERE is_private = 0",
+        ),
         queryD1<UserRow>("SELECT id, discord_username FROM users"),
         getCommitOverflowStats(),
     ]);
