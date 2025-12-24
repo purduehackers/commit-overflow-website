@@ -283,12 +283,14 @@ interface CommitRow {
     user_id: string;
     committed_at: string;
     message_id: string;
+    is_private: number;
 }
 
 interface ProfileRow {
     user_id: string;
     timezone: string;
     thread_id: string;
+    is_private: number;
 }
 
 interface UserRow {
@@ -329,17 +331,25 @@ interface StatsResponse {
 }
 
 async function computeStats(): Promise<StatsResponse> {
-    const [commits, profiles, users, discordStats] = await Promise.all([
+    const [allCommits, allProfiles, users, discordStats] = await Promise.all([
         queryD1<CommitRow>(
-            "SELECT user_id, committed_at, message_id FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
+            "SELECT user_id, committed_at, message_id, is_private FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
         ),
-        queryD1<ProfileRow>("SELECT user_id, timezone, thread_id FROM commit_overflow_profiles"),
+        queryD1<ProfileRow>(
+            "SELECT user_id, timezone, thread_id, is_private FROM commit_overflow_profiles",
+        ),
         queryD1<UserRow>("SELECT id, discord_username FROM users"),
         getCommitOverflowStats(),
     ]);
 
+    const publicUserIds = new Set(
+        allProfiles.filter((p) => p.is_private === 0).map((p) => p.user_id),
+    );
+    const leaderboardCommits = allCommits.filter((c) => publicUserIds.has(c.user_id));
+    const feedCommits = allCommits.filter((c) => c.is_private === 0);
+
     const userMap = new Map(users.map((u: UserRow) => [u.id, u.discord_username]));
-    const timezoneMap = new Map(profiles.map((p: ProfileRow) => [p.user_id, p.timezone]));
+    const timezoneMap = new Map(allProfiles.map((p: ProfileRow) => [p.user_id, p.timezone]));
 
     const eventProgress = getEventProgress();
     const allDates = getDateRange(EVENT_START, EVENT_END);
@@ -349,16 +359,18 @@ async function computeStats(): Promise<StatsResponse> {
         commitsByDay[date] = 0;
     });
 
-    const userCommits = new Map<string, string[]>();
-
-    for (const commit of commits) {
+    for (const commit of allCommits) {
         const timezone = timezoneMap.get(commit.user_id) || DEFAULT_TIMEZONE;
         const commitDay = getCommitDay(commit.committed_at, timezone);
 
         if (commitsByDay[commitDay] !== undefined) {
             commitsByDay[commitDay]++;
         }
+    }
 
+    const userCommits = new Map<string, string[]>();
+
+    for (const commit of leaderboardCommits) {
         if (!userCommits.has(commit.user_id)) {
             userCommits.set(commit.user_id, []);
         }
@@ -408,10 +420,10 @@ async function computeStats(): Promise<StatsResponse> {
     const today = getCommitDay(new Date().toISOString(), DEFAULT_TIMEZONE);
     const commitsToday = commitsByDay[today] || 0;
 
-    const profileMap = new Map(profiles.map((p) => [p.user_id, p.thread_id]));
+    const profileMap = new Map(allProfiles.map((p) => [p.user_id, p.thread_id]));
 
     const recentCommits = await Promise.all(
-        commits.slice(0, 10).map(async (commit: CommitRow) => {
+        feedCommits.slice(0, 10).map(async (commit: CommitRow) => {
             const username = userMap.get(commit.user_id) || "Unknown";
             const avatarUrl = `/api/avatar/${commit.user_id}.png`;
             const threadId = profileMap.get(commit.user_id) || "";
@@ -444,7 +456,7 @@ async function computeStats(): Promise<StatsResponse> {
     return {
         event: eventProgress,
         stats: {
-            totalCommits: commits.length,
+            totalCommits: allCommits.length,
             activeHackers: discordStats.activeHackers,
             messagesSent: discordStats.totalMessages,
             commitsToday,
