@@ -17,7 +17,7 @@ export const config: VercelConfig = {
       maxAge: "1year",
       immutable: true,
     }),
-    routes.cacheControl("/favicon.svg", {
+    routes.cacheControl("/favicon.png", {
       public: true,
       maxAge: "1day",
     }),
