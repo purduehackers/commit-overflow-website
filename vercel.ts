@@ -6,11 +6,11 @@ export const config: VercelConfig = {
   trailingSlash: false,
 
   headers: [
-    routes.cacheControl("/api/(.*)", {
+    routes.cacheControl("/api/avatar/(.*)", {
       public: true,
-      maxAge: "10s",
-      sMaxAge: "60s",
-      staleWhileRevalidate: "5min",
+      maxAge: "1day",
+      sMaxAge: "7days",
+      staleWhileRevalidate: "1day",
     }),
     routes.cacheControl("/_astro/(.*)", {
       public: true,
