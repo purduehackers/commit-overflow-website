@@ -1,0 +1,48 @@
+---
+---
+<div class="theme-picker" role="group" aria-label="Theme selection">
+  <span class="theme-label" id="theme-label">theme:</span>
+  <button class="theme-btn" data-theme="light" aria-pressed="false" aria-describedby="theme-label">light</button>
+  <span class="theme-label" aria-hidden="true">/</span>
+  <button class="theme-btn" data-theme="dark" aria-pressed="false" aria-describedby="theme-label">dark</button>
+  <span class="theme-label" aria-hidden="true">/</span>
+  <button class="theme-btn" data-theme="auto" aria-pressed="false" aria-describedby="theme-label">auto</button>
+</div>
+
+<script>
+  function applyTheme(theme: string) {
+    const root = document.documentElement;
+    root.classList.remove('light', 'dark');
+    if (theme === 'light' || theme === 'dark') {
+      root.classList.add(theme);
+    }
+  }
+
+  function updateButtons(theme: string) {
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      const isActive = btn.getAttribute('data-theme') === theme;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-pressed', String(isActive));
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const stored = localStorage.getItem('theme');
+    const theme = (stored === 'light' || stored === 'dark') ? stored : 'auto';
+    applyTheme(theme);
+    updateButtons(theme);
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newTheme = btn.getAttribute('data-theme') || 'auto';
+        if (newTheme === 'auto') {
+          localStorage.removeItem('theme');
+        } else {
+          localStorage.setItem('theme', newTheme);
+        }
+        applyTheme(newTheme);
+        updateButtons(newTheme);
+      });
+    });
+  });
+</script>

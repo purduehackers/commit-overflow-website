@@ -9,6 +9,66 @@
     --muted: #666666;
     --border: #cccccc;
     --font: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace;
+
+    /* Dark theme values */
+    --dark-bg: #0d0d0d;
+    --dark-fg: #e0e0e0;
+    --dark-accent: #00cc00;
+    --dark-muted: #888888;
+    --dark-border: #333333;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not(.light):not(.dark) {
+        --bg: var(--dark-bg);
+        --fg: var(--dark-fg);
+        --accent: var(--dark-accent);
+        --muted: var(--dark-muted);
+        --border: var(--dark-border);
+    }
+}
+
+:root.dark {
+    --bg: var(--dark-bg);
+    --fg: var(--dark-fg);
+    --accent: var(--dark-accent);
+    --muted: var(--dark-muted);
+    --border: var(--dark-border);
+}
+
+/* Theme picker styles */
+.theme-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5ch;
+    font-size: 0.85rem;
+}
+
+.theme-label {
+    color: var(--muted);
+}
+
+.theme-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: var(--muted);
+    cursor: pointer;
+    padding: 0;
+}
+
+.theme-btn:hover {
+    color: var(--fg);
+}
+
+.theme-btn:focus-visible {
+    outline: 1px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.theme-btn.active {
+    color: var(--accent);
 }
 
 * {
