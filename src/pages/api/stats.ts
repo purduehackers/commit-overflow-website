@@ -131,6 +131,22 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
+        /(?<!href=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-f0-9]+)...([a-f0-9]+)/gi,
+        (_, domain, user, repo, firstSha, secondSha) => {
+            const safeDomain = escapeHtml(domain);
+            const safeUser = escapeHtml(user);
+            const safeRepo = escapeHtml(repo);
+            const safeFirstSha = escapeHtml(firstSha).substring(0, 8);
+            const safeSecondSha = escapeHtml(secondSha).substring(0, 8);
+            if (domain === "github.com") {
+                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/compare/${safeFirstSha}...${safeSecondSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span><span class="github-sha">${safeFirstSha}...${safeSecondSha}</span></a>`;
+            } else {
+                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/compare/${safeFirstSha}...${safeSecondSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span><span class="github-sha">${safeFirstSha}...${safeSecondSha}</span></a>`;
+            }
+        },
+    );
+
+    parsed = parsed.replace(
         /(?<!href=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/pull\/(\d+)/gi,
         (_, domain, user, repo, num) => {
             const safeDomain = escapeHtml(domain);
