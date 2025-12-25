@@ -131,7 +131,7 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-f0-9]+)...([a-f0-9]+)/gi,
+        /(?<!href=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-z0-9]+)?\.*([a-z0-9]+)?/gi,
         (_, domain, user, repo, firstSha, secondSha) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
