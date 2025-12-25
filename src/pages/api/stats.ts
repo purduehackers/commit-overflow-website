@@ -112,7 +112,9 @@ async function computeStats(): Promise<StatsResponse> {
         allProfiles.filter((p) => p.is_private === 0).map((p) => p.user_id),
     );
     const leaderboardCommits = allCommits.filter((c) => publicUserIds.has(c.user_id));
-    const feedCommits = allCommits.filter((c) => c.is_private === 0 && c.is_explicitly_private === 0);
+    const feedCommits = allCommits.filter(
+        (c) => c.is_private === 0 && c.is_explicitly_private === 0,
+    );
 
     const userMap = new Map(users.map((u: UserRow) => [u.id, u.discord_username]));
     const timezoneMap = new Map(allProfiles.map((p: ProfileRow) => [p.user_id, p.timezone]));

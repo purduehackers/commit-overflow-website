@@ -33,7 +33,11 @@ function formatDateLabel(dateStr: string): string {
     return `${month} ${day}`;
 }
 
-function verticalBarChart(commitsByDay: Record<string, number>, days: string[], globalMax: number): string[] {
+function verticalBarChart(
+    commitsByDay: Record<string, number>,
+    days: string[],
+    globalMax: number,
+): string[] {
     const values = days.map((day) => commitsByDay[day] || 0);
     const height = Math.ceil(globalMax / 4);
     const max = globalMax;
@@ -154,42 +158,53 @@ export function CommitChart() {
     const days = getDateRange(event.startDate, event.endDate);
     const rawMax = Math.max(...Object.values(commitsByDay), 1);
     const globalMax = Math.ceil(rawMax / 20) * 20;
-    
+
     const maxOffset = Math.max(0, days.length - MOBILE_DAYS);
     const displayDays = isMobile ? days.slice(mobileOffset, mobileOffset + MOBILE_DAYS) : days;
-    
+
     const chart = verticalBarChart(commitsByDay, displayDays, globalMax);
     const heatmap = heatmapRow(commitsByDay, isMobile ? displayDays : days);
 
     const startLabel = formatDateLabel(isMobile ? displayDays[0] : event.startDate);
-    const endLabel = formatDateLabel(isMobile ? displayDays[displayDays.length - 1] : event.endDate);
+    const endLabel = formatDateLabel(
+        isMobile ? displayDays[displayDays.length - 1] : event.endDate,
+    );
 
     const canGoBack = mobileOffset > 0;
     const nextPageDays = days.slice(mobileOffset + MOBILE_DAYS, mobileOffset + MOBILE_DAYS * 2);
-    const hasCommitsOnNextPage = nextPageDays.some(day => (commitsByDay[day] || 0) > 0);
+    const hasCommitsOnNextPage = nextPageDays.some((day) => (commitsByDay[day] || 0) > 0);
     const canGoForward = mobileOffset < maxOffset && hasCommitsOnNextPage;
 
     const chartLines = isMobile ? chart.slice(0, -1) : chart;
-    
+
     const buildMobileLabelsRow = () => {
         if (!isMobile) return null;
         const originalLabels = chart[chart.length - 1];
         const match = originalLabels.match(/^(\s*)(.*)$/);
-        const padding = match ? match[1] + '  ' : '';
+        const padding = match ? match[1] + "  " : "";
         const labels = match ? match[2] : originalLabels;
-        
+
         return (
             <pre className="mobile-labels-row">
                 {padding}
-                <span 
-                    className={`nav-text ${canGoBack ? '' : 'disabled'}`}
-                    onClick={() => canGoBack && setMobileOffset(Math.max(0, mobileOffset - MOBILE_DAYS))}
-                >{"<"}</span>
-                {" "}{labels}{" "}
-                <span 
-                    className={`nav-text ${canGoForward ? '' : 'disabled'}`}
-                    onClick={() => canGoForward && setMobileOffset(Math.min(maxOffset, mobileOffset + MOBILE_DAYS))}
-                >{">"}</span>
+                <span
+                    className={`nav-text ${canGoBack ? "" : "disabled"}`}
+                    onClick={() =>
+                        canGoBack && setMobileOffset(Math.max(0, mobileOffset - MOBILE_DAYS))
+                    }
+                >
+                    {"<"}
+                </span>{" "}
+                {labels}{" "}
+                <span
+                    className={`nav-text ${canGoForward ? "" : "disabled"}`}
+                    onClick={() =>
+                        canGoForward &&
+                        setMobileOffset(Math.min(maxOffset, mobileOffset + MOBILE_DAYS))
+                    }
+                >
+                    {">"}
+                </span>
             </pre>
         );
     };
@@ -197,7 +212,10 @@ export function CommitChart() {
     return (
         <section className="chart-section">
             <h2>COMMIT ACTIVITY</h2>
-            <pre className="bar-chart" dangerouslySetInnerHTML={{ __html: chartLines.join("\n") }} />
+            <pre
+                className="bar-chart"
+                dangerouslySetInnerHTML={{ __html: chartLines.join("\n") }}
+            />
             {buildMobileLabelsRow()}
             <div className="heatmap-container">
                 <pre className="heatmap">
