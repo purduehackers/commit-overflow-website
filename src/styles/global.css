@@ -8,7 +8,7 @@
     --accent: #009900;
     --muted: #666666;
     --border: #cccccc;
-    --font: "JetBrains Mono", "Fira Code", "Consolas", "Monaco", monospace;
+    --font: "Fira Code", "JetBrains Mono", "Consolas", "Monaco", monospace;
 
     /* Dark theme values */
     --dark-bg: #0d0d0d;
@@ -83,6 +83,7 @@ html {
 
 body {
     font-family: var(--font);
+    font-feature-settings: "liga" 1, "calt" 1, "zero" 1, "ss01" 1, "ss02" 1, "ss03" 1, "ss04" 1, "ss05" 1;
     background: var(--bg);
     color: var(--fg);
     line-height: 1.6;
@@ -367,6 +368,7 @@ ul ul ul li::before {
 
 .leaderboard-table th {
     border-bottom: 1px solid var(--border);
+    padding-bottom: 0.75rem;
     font-weight: normal;
     color: var(--muted);
 }

@@ -464,17 +464,22 @@ async function computeStats(): Promise<StatsResponse> {
             const avatarUrl = `/api/avatar/${commit.user_id}.png`;
             const threadId = profileMap.get(commit.user_id) || "";
             const message = threadId ? await getDiscordMessage(threadId, commit.message_id) : null;
-            const rawMessageText = message?.content || "";
+
+            const isForwarded = message?.message_reference?.type === 1;
+            const forwardedMessage = isForwarded ? message?.message_snapshots?.[0]?.message : null;
+
+            const rawMessageText = forwardedMessage?.content || message?.content || "";
             const escaped = escapeDiscordSyntax(rawMessageText);
             const truncatedText = smartTruncate(escaped, 50);
             const sanitizedHtml = await markdownToHtml(truncatedText);
             const withDiscord = await restoreDiscordSyntax(sanitizedHtml);
             const messageHtml = parseGitLinks(withDiscord);
-            const attachments =
-                message?.attachments?.map((a) => ({
-                    url: a.url,
-                    type: a.content_type || "",
-                })) || [];
+
+            const rawAttachments = forwardedMessage?.attachments || message?.attachments || [];
+            const attachments = rawAttachments.map((a) => ({
+                url: a.url,
+                type: a.content_type || "",
+            }));
             return {
                 odId: commit.user_id,
                 username,
