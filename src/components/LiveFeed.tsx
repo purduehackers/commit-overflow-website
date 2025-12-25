@@ -42,7 +42,7 @@ function processLinksInHtml(html: string): string {
     );
 
     // Convert plain text URLs to anchor tags (URLs not already inside href="...")
-    const urlRegex = /(?<!href=["'])(?<!">)(https?:\/\/[^\s<>"']+)/gi;
+    const urlRegex = /(?<!(?:href|src)=["'])(?<!">)(https?:\/\/[^\s<>"']+)/gi;
     processed = processed.replace(
         urlRegex,
         '<a href="$1" rel="nofollow noopener noreferrer" target="_blank">$1</a>',
