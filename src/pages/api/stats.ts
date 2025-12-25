@@ -116,7 +116,7 @@ function parseGitLinks(html: string): string {
     let parsed = html;
 
     parsed = parsed.replace(
-        /(?<!href=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/commit\/([a-f0-9]+)/gi,
+        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/commit\/([a-f0-9]+)/gi,
         (_, domain, user, repo, sha) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
@@ -131,7 +131,7 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
-        /(?<!href=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-f0-9]+)...([a-f0-9]+)/gi,
+        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-f0-9]+)...([a-f0-9]+)/gi,
         (_, domain, user, repo, firstSha, secondSha) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
@@ -147,7 +147,7 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
-        /(?<!href=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/pull\/(\d+)/gi,
+        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/pull\/(\d+)/gi,
         (_, domain, user, repo, num) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
@@ -161,7 +161,7 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
-        /(?<!href=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+)/gi,
+        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+)/gi,
         (_, domain, user, repo, num) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
@@ -175,7 +175,7 @@ function parseGitLinks(html: string): string {
     );
 
     parsed = parsed.replace(
-        /(?<!href=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)(?=[\s)\],.!?]|$)/gi,
+        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)(?=[\s)\],.!?]|$)/gi,
         (_, domain, user, repo) => {
             const safeDomain = escapeHtml(domain);
             const safeUser = escapeHtml(user);
@@ -520,7 +520,8 @@ export const GET: APIRoute = async () => {
                 "Cache-Control": "public, max-age=10",
             },
         });
-    } catch {
+    } catch (error) {
+		console.error(error);
         return new Response(JSON.stringify({ error: "Failed to fetch stats" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
