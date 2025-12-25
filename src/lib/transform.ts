@@ -302,14 +302,26 @@ export function rehypeGitLinks() {
             }
 
             link.properties.className = ["github-commit"];
-            link.properties.target = "_blank";
-            link.properties.rel = "noopener noreferrer";
             link.children = newContent.map(([clazz, text]) => ({
                 type: "element",
                 tagName: "span",
                 properties: { className: [clazz] },
                 children: [{ type: "text", value: text }],
             }));
+        });
+    };
+}
+
+/**
+ * Plugin that adds target=_blank and rel="nofollow noopener noreferrer"
+ * attributes to all <a> tags.
+ */
+export function rehypeLinkAttributes() {
+    return (tree: Node) => {
+        visit(tree, "element", (el: Element) => {
+            if (el.tagName !== "a") return;
+            el.properties.target = "_blank";
+            el.properties.rel = ["nofollow", "noopener", "noreferrer"];
         });
     };
 }

@@ -34,23 +34,6 @@ function isAudio(type: string): boolean {
     return type.startsWith("audio/");
 }
 
-function processLinksInHtml(html: string): string {
-    // Add rel attributes to existing anchor tags
-    let processed = html.replace(
-        /<a\s+([^>]*?)href=/gi,
-        '<a $1rel="nofollow noopener noreferrer" target="_blank" href=',
-    );
-
-    // Convert plain text URLs to anchor tags (URLs not already inside href="...")
-    const urlRegex = /(?<!(?:href|src)=["'])(?<!">)(https?:\/\/[^\s<>"']+)/gi;
-    processed = processed.replace(
-        urlRegex,
-        '<a href="$1" rel="nofollow noopener noreferrer" target="_blank">$1</a>',
-    );
-
-    return processed;
-}
-
 interface LightboxState {
     isOpen: boolean;
     attachments: Attachment[];
@@ -425,7 +408,7 @@ export function LiveFeed() {
                                                 style={{ flex: 1 }}
                                                 className="markdown-content"
                                                 dangerouslySetInnerHTML={{
-                                                    __html: processLinksInHtml(commit.messageHtml),
+                                                    __html: commit.messageHtml,
                                                 }}
                                             />
                                         </div>

@@ -23,7 +23,13 @@ import remarkRehype from "remark-rehype";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import { cached } from "../../lib/redis";
-import { rehypeDiscord, rehypeGitLinks, remarkAutolink, smartTruncate } from "../../lib/transform";
+import {
+    rehypeDiscord,
+    rehypeGitLinks,
+    rehypeLinkAttributes,
+    remarkAutolink,
+    smartTruncate,
+} from "../../lib/transform";
 
 // Cache TTL for the full stats response (in seconds)
 const STATS_CACHE_TTL = 15;
@@ -37,6 +43,7 @@ const markdownProcessor = unified()
     .use(rehypeSanitize)
     .use(rehypeDiscord)
     .use(rehypeGitLinks)
+    .use(rehypeLinkAttributes)
     .use(rehypeStringify);
 
 async function markdownToHtml(markdown: string): Promise<string> {
