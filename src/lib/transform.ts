@@ -279,13 +279,13 @@ export function rehypeGitLinks() {
                 const { domain, user, repo, sha } = match.groups!;
                 newContent = [
                     ["github-repo", repoName(domain, user, repo)],
-                    ["github-sha", sha.slice(0, 8)],
+                    ["github-sha", abbreviateRev(sha)],
                 ];
             } else if ((match = href.match(DIFF_PATTERN))) {
                 const { domain, user, repo, from, to, dots } = match.groups!;
                 newContent = [
                     ["github-repo", repoName(domain, user, repo)],
-                    ["github-sha", `${from}${dots}${to}`],
+                    ["github-sha", `${abbreviateRev(from)}${dots}${abbreviateRev(to)}`],
                 ];
             } else if ((match = href.match(ISSUE_PULL_PATTERN))) {
                 const { domain, user, repo, num } = match.groups!;
@@ -312,6 +312,17 @@ export function rehypeGitLinks() {
             }));
         });
     };
+}
+
+/**
+ * Takes a Git revision (commit SHA, branch/tag, etc.)
+ * @returns the abbreviated SHA if the input is a SHA, otherwise the unchanged input
+ */
+function abbreviateRev(rev: string): string {
+    if (rev.match(/[0-9a-f]{40}/i)) {
+        return rev.slice(0, 7);
+    }
+    return rev;
 }
 
 export function smartTruncate(text: string, maxWords: number = 50): string {
