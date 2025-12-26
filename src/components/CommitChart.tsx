@@ -76,7 +76,7 @@ function heatmapRow(commitsByDay: Record<string, number>, days: string[]): strin
     return values
         .map((count) => {
             const level = count === 0 ? 0 : Math.ceil((count / max) * 4);
-            return HEATMAP_CHARS[level].repeat(2);
+            return HEATMAP_CHARS[level];
         })
         .join("");
 }
@@ -152,16 +152,17 @@ export function CommitChart() {
 
     const { commitsByDay, event } = data;
     const days = getDateRange(event.startDate, event.endDate);
-    const globalMax = Math.max(...Object.values(commitsByDay), 1);
+    const rawMax = Math.max(...Object.values(commitsByDay), 1);
+    const globalMax = Math.ceil(rawMax / 20) * 20;
     
     const maxOffset = Math.max(0, days.length - MOBILE_DAYS);
     const displayDays = isMobile ? days.slice(mobileOffset, mobileOffset + MOBILE_DAYS) : days;
     
     const chart = verticalBarChart(commitsByDay, displayDays, globalMax);
-    const heatmap = heatmapRow(commitsByDay, days);
+    const heatmap = heatmapRow(commitsByDay, isMobile ? displayDays : days);
 
-    const startLabel = formatDateLabel(event.startDate);
-    const endLabel = formatDateLabel(event.endDate);
+    const startLabel = formatDateLabel(isMobile ? displayDays[0] : event.startDate);
+    const endLabel = formatDateLabel(isMobile ? displayDays[displayDays.length - 1] : event.endDate);
 
     const canGoBack = mobileOffset > 0;
     const nextPageDays = days.slice(mobileOffset + MOBILE_DAYS, mobileOffset + MOBILE_DAYS * 2);
