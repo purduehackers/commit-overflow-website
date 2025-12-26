@@ -96,7 +96,7 @@ interface StatsResponse {
         threadId: string;
         messageId: string;
         messageHtml: string;
-        attachments: Array<{ url: string; type: string }>;
+        attachments: Array<{ url: string; type: string; filename: string }>;
         committedAt: string;
         relativeTime: string;
     }>;
@@ -215,6 +215,7 @@ async function computeStats(): Promise<StatsResponse> {
             const attachments = rawAttachments.map((a) => ({
                 url: a.url,
                 type: a.content_type || "",
+                filename: a.filename,
             }));
             return {
                 odId: commit.user_id,

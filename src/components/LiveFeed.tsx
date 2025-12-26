@@ -16,7 +16,7 @@ interface RecentCommit {
     threadId: string;
     messageId: string;
     messageHtml: string;
-    attachments: { url: string; type: string }[];
+    attachments: { url: string; type: string; filename: string }[];
 }
 
 interface PaginatedCommitsResponse {
@@ -547,17 +547,23 @@ export function LiveFeed() {
                                                         );
                                                     } else {
                                                         return (
-                                                            <span
+                                                            <a
                                                                 key={idx}
-                                                                className="attachment-link"
-                                                                style={{
-                                                                    padding: "0.25rem 0.5rem",
-                                                                    border: "1px solid var(--border)",
-                                                                    borderRadius: "4px",
-                                                                }}
+                                                                href={attachment.url}
+                                                                target="_blank"
+                                                                rel="nofollow noopener noreferrer"
                                                             >
-                                                                📎 {attachment.url.split("/").pop()}
-                                                            </span>
+                                                                <span
+                                                                    className="attachment-link"
+                                                                    style={{
+                                                                        padding: "0.25rem 0.5rem",
+                                                                        border: "1px solid var(--border)",
+                                                                        borderRadius: "4px",
+                                                                    }}
+                                                                >
+                                                                    📎 {attachment.filename}
+                                                                </span>
+                                                            </a>
                                                         );
                                                     }
                                                 });
