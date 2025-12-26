@@ -59,7 +59,7 @@ interface CommitItem {
     threadId: string;
     messageId: string;
     messageHtml: string;
-    attachments: Array<{ url: string; type: string }>;
+    attachments: Array<{ url: string; type: string, filename: string }>;
     committedAt: string;
     relativeTime: string;
 }
@@ -82,15 +82,15 @@ async function fetchPaginatedCommits(
 
     const [feedCommits, totalResult, allProfiles, users] = await Promise.all([
         queryD1<CommitRow>(
-            `SELECT user_id, committed_at, message_id, is_private, is_explicitly_private 
-             FROM commits 
+            `SELECT user_id, committed_at, message_id, is_private, is_explicitly_private
+             FROM commits
              WHERE approved_at IS NOT NULL AND is_private = 0 AND is_explicitly_private = 0
-             ORDER BY committed_at DESC 
+             ORDER BY committed_at DESC
              LIMIT ? OFFSET ?`,
             [limit + 1, offset], // Fetch one extra to check if there are more
         ),
         queryD1<{ count: number }>(
-            `SELECT COUNT(*) as count FROM commits 
+            `SELECT COUNT(*) as count FROM commits
              WHERE approved_at IS NOT NULL AND is_private = 0 AND is_explicitly_private = 0`,
         ),
         queryD1<ProfileRow>("SELECT user_id, thread_id FROM commit_overflow_profiles"),
@@ -122,6 +122,7 @@ async function fetchPaginatedCommits(
             const attachments = rawAttachments.map((a) => ({
                 url: a.url,
                 type: a.content_type || "",
+                filename: a.filename,
             }));
 
             return {
@@ -134,7 +135,7 @@ async function fetchPaginatedCommits(
                 attachments,
                 committedAt: commit.committed_at,
                 relativeTime: relativeTime(commit.committed_at),
-            };
+            } satisfies CommitItem;
         }),
     );
 
