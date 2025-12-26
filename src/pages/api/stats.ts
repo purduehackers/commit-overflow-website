@@ -49,6 +49,7 @@ interface CommitRow {
     committed_at: string;
     message_id: string;
     is_private: number;
+    is_explicitly_private: number;
 }
 
 interface ProfileRow {
@@ -98,7 +99,7 @@ interface StatsResponse {
 async function computeStats(): Promise<StatsResponse> {
     const [allCommits, allProfiles, users, discordStats] = await Promise.all([
         queryD1<CommitRow>(
-            "SELECT user_id, committed_at, message_id, is_private FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
+            "SELECT user_id, committed_at, message_id, is_private, is_explicitly_private FROM commits WHERE approved_at IS NOT NULL ORDER BY committed_at DESC",
         ),
         queryD1<ProfileRow>(
             "SELECT user_id, timezone, thread_id, is_private FROM commit_overflow_profiles",
@@ -111,7 +112,7 @@ async function computeStats(): Promise<StatsResponse> {
         allProfiles.filter((p) => p.is_private === 0).map((p) => p.user_id),
     );
     const leaderboardCommits = allCommits.filter((c) => publicUserIds.has(c.user_id));
-    const feedCommits = allCommits.filter((c) => c.is_private === 0);
+    const feedCommits = allCommits.filter((c) => c.is_private === 0 && c.is_explicitly_private === 0);
 
     const userMap = new Map(users.map((u: UserRow) => [u.id, u.discord_username]));
     const timezoneMap = new Map(allProfiles.map((p: ProfileRow) => [p.user_id, p.timezone]));
