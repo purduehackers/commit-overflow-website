@@ -585,7 +585,10 @@ export function LiveFeed() {
                     </div>
                 )}
                 {!hasMore && allCommits.length > 0 && (
-                    <div className="feed-end muted" style={{ padding: "1rem 0", textAlign: "center" }}>
+                    <div
+                        className="feed-end muted"
+                        style={{ padding: "1rem 0", textAlign: "center" }}
+                    >
                         ── End of feed ──
                     </div>
                 )}

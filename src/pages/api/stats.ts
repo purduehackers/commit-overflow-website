@@ -1,12 +1,6 @@
 import type { APIRoute } from "astro";
 import { queryD1 } from "../../lib/d1";
-import {
-    getCommitOverflowStats,
-    getDiscordMessage,
-    getDiscordUser,
-    getDiscordChannel,
-    getRole,
-} from "../../lib/discord";
+import { getCommitOverflowStats, getDiscordMessage } from "../../lib/discord";
 import {
     getEventProgress,
     getCommitDay,

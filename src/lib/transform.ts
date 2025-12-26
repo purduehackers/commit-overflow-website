@@ -1,6 +1,6 @@
 import { visit } from "unist-util-visit";
 import type { Node } from "unist";
-import type { Literal, Parent, Text, Element, RootContent, Root } from "hast";
+import type { Parent, Text, Element, RootContent } from "hast";
 import { gfmAutolinkLiteral } from "micromark-extension-gfm-autolink-literal";
 import { gfmAutolinkLiteralFromMarkdown } from "mdast-util-gfm-autolink-literal";
 import { getDiscordChannel, getDiscordUser, getRole } from "./discord";
