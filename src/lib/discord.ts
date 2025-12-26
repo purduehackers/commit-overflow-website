@@ -135,7 +135,7 @@ export async function getForumThreads(): Promise<DiscordThread[]> {
 
 interface MessageSnapshotFields {
     content: string;
-    attachments: { url: string; content_type?: string }[];
+    attachments: Attachment[];
     embeds: unknown[];
     timestamp: string;
     edited_timestamp: string | null;
@@ -143,6 +143,13 @@ interface MessageSnapshotFields {
     mentions: unknown[];
     mention_roles: string[];
     type: number;
+}
+
+export interface Attachment {
+    url: string;
+    content_type?: string;
+    filename: string;
+    title?: string;
 }
 
 interface MessageSnapshot {
@@ -163,7 +170,7 @@ interface DiscordMessage {
         id: string;
         username: string;
     };
-    attachments: { url: string; content_type?: string }[];
+    attachments: Attachment[];
     message_reference?: MessageReference;
     message_snapshots?: MessageSnapshot[];
 }

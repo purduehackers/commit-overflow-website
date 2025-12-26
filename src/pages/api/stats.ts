@@ -1,12 +1,6 @@
 import type { APIRoute } from "astro";
 import { queryD1 } from "../../lib/d1";
-import {
-    getCommitOverflowStats,
-    getDiscordMessage,
-    getDiscordUser,
-    getDiscordChannel,
-    getRole,
-} from "../../lib/discord";
+import { getCommitOverflowStats, getDiscordMessage } from "../../lib/discord";
 import {
     getEventProgress,
     getCommitDay,
@@ -96,7 +90,7 @@ interface StatsResponse {
         threadId: string;
         messageId: string;
         messageHtml: string;
-        attachments: Array<{ url: string; type: string }>;
+        attachments: Array<{ url: string; type: string; filename: string }>;
         committedAt: string;
         relativeTime: string;
     }>;
@@ -215,6 +209,7 @@ async function computeStats(): Promise<StatsResponse> {
             const attachments = rawAttachments.map((a) => ({
                 url: a.url,
                 type: a.content_type || "",
+                filename: a.filename,
             }));
             return {
                 odId: commit.user_id,
