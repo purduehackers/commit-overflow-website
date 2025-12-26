@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import { useState, useEffect } from "react";
 import { fetcher } from "../lib/fetcher";
 
 interface StatsData {
@@ -25,6 +26,18 @@ export function Progress() {
     const { data, error, mutate } = useSWR<StatsData>("/api/stats", fetcher, {
         refreshInterval: 60000,
     });
+
+    const [barWidth, setBarWidth] = useState(70);
+
+    useEffect(() => {
+        const handleResize = () => {
+            setBarWidth(window.innerWidth <= 600 ? 30 : 70);
+        };
+
+        handleResize();
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     if (error) {
         return (
@@ -86,7 +99,7 @@ export function Progress() {
                     className="progress-bar skeleton"
                     style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
                 >
-                    <span className="unselectable">{"░".repeat(70)}</span>
+                    <span className="unselectable">{"░".repeat(barWidth)}</span>
                     <span>Day ░ of 20</span>
                 </pre>
             </section>
@@ -119,7 +132,7 @@ export function Progress() {
                 style={{ display: "flex", justifyContent: "space-between", width: "100%" }}
             >
                 {(() => {
-                    const bar = progressBar(currentDay, totalDays);
+                    const bar = progressBar(currentDay, totalDays, barWidth);
                     return (
                         <span className="unselectable">
                             {bar.filled}

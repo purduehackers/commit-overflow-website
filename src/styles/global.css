@@ -571,18 +571,30 @@ ul ul ul li::before {
     margin: 0 0.5rem;
 }
 
+astro-island {
+    display: block !important;
+    width: 100%;
+    max-width: 100%;
+}
+
 /* Mobile responsive */
 @media (max-width: 600px) {
     html {
         font-size: 12px;
     }
 
+    html, body {
+        overflow-x: hidden;
+    }
+
     body {
-        padding: 1rem 0.5rem;
+        padding: 1rem;
     }
 
     .ascii {
         font-size: 0.5rem;
+        max-width: 100%;
+        overflow-x: auto;
     }
 
     .chart {
@@ -597,5 +609,92 @@ ul ul ul li::before {
         order: 3;
         width: 100%;
         flex: none;
+    }
+
+    .bar-chart {
+        font-size: 12px;
+    }
+
+    .chart-section {
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .heatmap-container {
+        text-align: center;
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .heatmap .date-label {
+        display: none;
+    }
+
+    .heatmap {
+        display: inline-block;
+    }
+
+    .heatmap-chars {
+        font-size: 12px;
+    }
+
+    .heatmap-legend {
+        font-size: 12px;
+    }
+
+    .mobile-chart-nav {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .mobile-labels-row {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-family: inherit;
+        font-size: 12px;
+        gap: 0.5rem;
+    }
+
+    .nav-text {
+        cursor: pointer;
+        color: var(--fg);
+        padding: 0 0.25rem;
+    }
+
+    .nav-text.disabled {
+        opacity: 0.3;
+        cursor: default;
+    }
+
+    .date-labels {
+        font-family: inherit;
+    }
+
+    .progress-bar {
+        white-space: pre;
+    }
+
+    /* Hide non-selected stat columns on mobile based on sort */
+    .leaderboard-section[data-sort="commits"] .leaderboard-table th:nth-child(4),
+    .leaderboard-section[data-sort="commits"] .leaderboard-table td:nth-child(4),
+    .leaderboard-section[data-sort="commits"] .leaderboard-table th:nth-child(5),
+    .leaderboard-section[data-sort="commits"] .leaderboard-table td:nth-child(5) {
+        display: none;
+    }
+
+    .leaderboard-section[data-sort="days"] .leaderboard-table th:nth-child(3),
+    .leaderboard-section[data-sort="days"] .leaderboard-table td:nth-child(3),
+    .leaderboard-section[data-sort="days"] .leaderboard-table th:nth-child(5),
+    .leaderboard-section[data-sort="days"] .leaderboard-table td:nth-child(5) {
+        display: none;
+    }
+
+    .leaderboard-section[data-sort="streak"] .leaderboard-table th:nth-child(3),
+    .leaderboard-section[data-sort="streak"] .leaderboard-table td:nth-child(3),
+    .leaderboard-section[data-sort="streak"] .leaderboard-table th:nth-child(4),
+    .leaderboard-section[data-sort="streak"] .leaderboard-table td:nth-child(4) {
+        display: none;
     }
 }
