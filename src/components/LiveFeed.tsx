@@ -519,8 +519,6 @@ export function LiveFeed() {
                                                                         maxHeight: "150px",
                                                                         width: "auto",
                                                                         height: "auto",
-                                                                        aspectRatio: "4 / 3",
-                                                                        objectFit: "cover",
                                                                         borderRadius: "4px",
                                                                         backgroundColor:
                                                                             "var(--border)",
