@@ -17,6 +17,7 @@
         "@astrojs/tailwind": "^6.0.2",
         "@astrojs/vercel": "^9.0.2",
         "@upstash/redis": "^1.35.8",
+        "@vercel/analytics": "^1.6.1",
         "@vercel/config": "^0.0.24",
         "astro": "^5.16.6",
         "astro-capo": "^0.0.1",
