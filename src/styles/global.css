@@ -83,7 +83,15 @@ html {
 
 body {
     font-family: var(--font);
-    font-feature-settings: "liga" 1, "calt" 1, "zero" 1, "ss01" 1, "ss02" 1, "ss03" 1, "ss04" 1, "ss05" 1;
+    font-feature-settings:
+        "liga" 1,
+        "calt" 1,
+        "zero" 1,
+        "ss01" 1,
+        "ss02" 1,
+        "ss03" 1,
+        "ss04" 1,
+        "ss05" 1;
     background: var(--bg);
     color: var(--fg);
     line-height: 1.6;

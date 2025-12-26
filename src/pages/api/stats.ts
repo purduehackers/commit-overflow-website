@@ -23,6 +23,7 @@ import remarkRehype from "remark-rehype";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeStringify from "rehype-stringify";
 import { cached } from "../../lib/redis";
+import { rehypeDiscord, rehypeGitLinks, remarkAutolink, smartTruncate } from "../../lib/transform";
 
 // Cache TTL for the full stats response (in seconds)
 const STATS_CACHE_TTL = 15;
@@ -31,288 +32,16 @@ const STATS_CACHE_TTL = 15;
 // This avoids the overhead of recreating the pipeline for each message
 const markdownProcessor = unified()
     .use(remarkParse)
+    .use(remarkAutolink)
     .use(remarkRehype)
     .use(rehypeSanitize)
+    .use(rehypeDiscord)
+    .use(rehypeGitLinks)
     .use(rehypeStringify);
-
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#x27;");
-}
 
 async function markdownToHtml(markdown: string): Promise<string> {
     const result = await markdownProcessor.process(markdown);
-    return String(result);
-}
-
-function escapeDiscordSyntax(text: string): string {
-    return text
-        .replace(/<@!?(\d+)>/g, "%%MENTION_USER_$1%%")
-        .replace(/<#(\d+)>/g, "%%MENTION_CHANNEL_$1%%")
-        .replace(/<@&(\d+)>/g, "%%MENTION_ROLE_$1%%")
-        .replace(/<a:(\w+):(\d+)>/g, "%%EMOJI_ANIMATED_$1_$2%%")
-        .replace(/<:(\w+):(\d+)>/g, "%%EMOJI_STATIC_$1_$2%%")
-        .replace(/<t:(\d+)(?::[tTdDfFR])?>/g, "%%TIMESTAMP_$1%%");
-}
-
-async function restoreDiscordSyntax(html: string): Promise<string> {
-    let result = html;
-
-    const userMatches = [...result.matchAll(/%%MENTION_USER_(\d+)%%/g)];
-    const channelMatches = [...result.matchAll(/%%MENTION_CHANNEL_(\d+)%%/g)];
-    const roleMatches = [...result.matchAll(/%%MENTION_ROLE_(\d+)%%/g)];
-
-    const [userResults, channelResults, roleResults] = await Promise.all([
-        Promise.all(userMatches.map((match) => getDiscordUser(match[1]))),
-        Promise.all(channelMatches.map((match) => getDiscordChannel(match[1]))),
-        Promise.all(roleMatches.map((match) => getRole(match[1]))),
-    ]);
-
-    userMatches.forEach((match, i) => {
-        const user = userResults[i];
-        const name = escapeHtml(user?.global_name || user?.username || "user");
-        result = result.replace(match[0], `<span class="mention mention-user">@${name}</span>`);
-    });
-
-    channelMatches.forEach((match, i) => {
-        const channel = channelResults[i];
-        const name = escapeHtml(channel?.name || "channel");
-        result = result.replace(match[0], `<span class="mention mention-channel">#${name}</span>`);
-    });
-
-    roleMatches.forEach((match, i) => {
-        const role = roleResults[i];
-        const name = escapeHtml(role?.name || "role");
-        const color = role?.color ? `#${role.color.toString(16).padStart(6, "0")}` : null;
-        const style =
-            color && color !== "#000000" ? ` style="color: ${color}; background: ${color}20"` : "";
-        result = result.replace(
-            match[0],
-            `<span class="mention mention-role"${style}>@${name}</span>`,
-        );
-    });
-
-    result = result.replace(
-        /%%EMOJI_ANIMATED_(\w+)_(\d+)%%/g,
-        '<img src="https://cdn.discordapp.com/emojis/$2.gif" alt=":$1:" class="discord-emoji" />',
-    );
-    result = result.replace(
-        /%%EMOJI_STATIC_(\w+)_(\d+)%%/g,
-        '<img src="https://cdn.discordapp.com/emojis/$2.png" alt=":$1:" class="discord-emoji" />',
-    );
-    result = result.replace(/%%TIMESTAMP_(\d+)%%/g, (_, ts) => {
-        const date = new Date(parseInt(ts) * 1000);
-        return `<time>${date.toLocaleString()}</time>`;
-    });
-
-    return result;
-}
-
-function parseGitLinks(html: string): string {
-    let parsed = html;
-
-    parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/commit\/([a-f0-9]+)/gi,
-        (_, domain, user, repo, sha) => {
-            const safeDomain = escapeHtml(domain);
-            const safeUser = escapeHtml(user);
-            const safeRepo = escapeHtml(repo);
-            const safeSha = escapeHtml(sha).substring(0, 8);
-            if (domain === "github.com") {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/commit/${safeSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span><span class="github-sha">${safeSha}</span></a>`;
-            } else {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/commit/${safeSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span><span class="github-sha">${safeSha}</span></a>`;
-            }
-        },
-    );
-
-    parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^\s]+)\/([^\s]+)\/compare\/([a-z0-9]+)?\.*([a-z0-9]+)?/gi,
-        (_, domain, user, repo, firstSha, secondSha) => {
-            const safeDomain = escapeHtml(domain);
-            const safeUser = escapeHtml(user);
-            const safeRepo = escapeHtml(repo);
-            const safeFirstSha = escapeHtml(firstSha).substring(0, 8);
-            const safeSecondSha = escapeHtml(secondSha).substring(0, 8);
-            if (domain === "github.com") {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/compare/${safeFirstSha}...${safeSecondSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span><span class="github-sha">${safeFirstSha}...${safeSecondSha}</span></a>`;
-            } else {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/compare/${safeFirstSha}...${safeSecondSha}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span><span class="github-sha">${safeFirstSha}...${safeSecondSha}</span></a>`;
-            }
-        },
-    );
-
-    parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/pull\/(\d+)/gi,
-        (_, domain, user, repo, num) => {
-            const safeDomain = escapeHtml(domain);
-            const safeUser = escapeHtml(user);
-            const safeRepo = escapeHtml(repo);
-            if (domain === "github.com") {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/pull/${num}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span><span class="github-num">#${num}</span></a>`;
-            } else {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/pull/${num}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span><span class="github-num">#${num}</span></a>`;
-            }
-        },
-    );
-
-    parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)\/issues\/(\d+)/gi,
-        (_, domain, user, repo, num) => {
-            const safeDomain = escapeHtml(domain);
-            const safeUser = escapeHtml(user);
-            const safeRepo = escapeHtml(repo);
-            if (domain === "github.com") {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/issues/${num}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span><span class="github-num">#${num}</span></a>`;
-            } else {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}/issues/${num}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span><span class="github-num">#${num}</span></a>`;
-            }
-        },
-    );
-
-    parsed = parsed.replace(
-        /(?<!(?:href|src)=")https?:\/\/([^\/\s]+)\/([^/\s]+)\/([^/\s]+)(?=[\s)\],.!?]|$)/gi,
-        (_, domain, user, repo) => {
-            const safeDomain = escapeHtml(domain);
-            const safeUser = escapeHtml(user);
-            const safeRepo = escapeHtml(repo);
-            if (domain === "github.com") {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeUser}/${safeRepo}</span></a>`;
-            } else {
-                return `<a href="https://${safeDomain}/${safeUser}/${safeRepo}" target="_blank" rel="noopener noreferrer" class="github-commit"><span class="github-repo">${safeDomain}:${safeUser}/${safeRepo}</span></a>`;
-            }
-        },
-    );
-
-    return parsed;
-}
-
-const AWKWARD_END_WORDS = new Set([
-    "the",
-    "a",
-    "an",
-    "and",
-    "or",
-    "but",
-    "in",
-    "on",
-    "at",
-    "to",
-    "for",
-    "of",
-    "with",
-    "by",
-    "from",
-    "as",
-    "is",
-    "was",
-    "are",
-    "were",
-    "been",
-    "be",
-    "have",
-    "has",
-    "had",
-    "do",
-    "does",
-    "did",
-    "will",
-    "would",
-    "could",
-    "should",
-    "may",
-    "might",
-    "must",
-    "shall",
-    "can",
-    "need",
-    "dare",
-    "ought",
-    "used",
-    "this",
-    "that",
-    "these",
-    "those",
-    "i",
-    "you",
-    "he",
-    "she",
-    "it",
-    "we",
-    "they",
-    "my",
-    "your",
-    "his",
-    "her",
-    "its",
-    "our",
-    "their",
-    "what",
-    "which",
-    "who",
-    "whom",
-    "whose",
-    "where",
-    "when",
-    "why",
-    "how",
-    "if",
-    "then",
-    "so",
-    "than",
-    "such",
-    "both",
-    "each",
-    "few",
-    "more",
-    "most",
-    "other",
-    "some",
-    "any",
-    "no",
-    "not",
-    "only",
-    "own",
-    "same",
-    "just",
-    "also",
-    "very",
-    "even",
-    "still",
-]);
-
-function smartTruncate(text: string, maxWords: number = 50): string {
-    const words = text.split(/\s+/).filter((w) => w.length > 0);
-    if (words.length <= maxWords) return text;
-
-    const windowStart = Math.max(0, maxWords - 10);
-    const windowEnd = Math.min(words.length, maxWords + 5);
-
-    let bestEnd = -1;
-    for (let i = windowStart; i < windowEnd; i++) {
-        if (/[.!?]$/.test(words[i]) || /[.!?]["')]$/.test(words[i])) {
-            bestEnd = i;
-            if (i >= maxWords - 5) break;
-        }
-    }
-
-    if (bestEnd === -1) {
-        for (let i = maxWords; i > windowStart; i--) {
-            const normalized = words[i - 1].toLowerCase().replace(/[^a-z]/g, "");
-            if (!AWKWARD_END_WORDS.has(normalized)) {
-                bestEnd = i - 1;
-                break;
-            }
-        }
-    }
-
-    if (bestEnd === -1) bestEnd = maxWords - 1;
-
-    return words.slice(0, bestEnd + 1).join(" ") + "...";
+    return result.toString();
 }
 
 interface CommitRow {
@@ -469,11 +198,8 @@ async function computeStats(): Promise<StatsResponse> {
             const forwardedMessage = isForwarded ? message?.message_snapshots?.[0]?.message : null;
 
             const rawMessageText = forwardedMessage?.content || message?.content || "";
-            const escaped = escapeDiscordSyntax(rawMessageText);
-            const truncatedText = smartTruncate(escaped, 50);
-            const sanitizedHtml = await markdownToHtml(truncatedText);
-            const withDiscord = await restoreDiscordSyntax(sanitizedHtml);
-            const messageHtml = parseGitLinks(withDiscord);
+            const truncatedText = smartTruncate(rawMessageText, 50);
+            const messageHtml = await markdownToHtml(truncatedText);
 
             const rawAttachments = forwardedMessage?.attachments || message?.attachments || [];
             const attachments = rawAttachments.map((a) => ({
@@ -521,7 +247,7 @@ export const GET: APIRoute = async () => {
             },
         });
     } catch (error) {
-		console.error(error);
+        console.error(error);
         return new Response(JSON.stringify({ error: "Failed to fetch stats" }), {
             status: 500,
             headers: { "Content-Type": "application/json" },
