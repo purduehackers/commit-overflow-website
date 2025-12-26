@@ -110,7 +110,7 @@ export function Leaderboard() {
     });
 
     return (
-        <section className="leaderboard-section w-full">
+        <section className="leaderboard-section w-full" data-sort={sortBy}>
             <div className="leaderboard-header">
                 <h2>TOP HACKERS</h2>
                 <div className="sort-toggle" role="group" aria-label="Sort leaderboard by">

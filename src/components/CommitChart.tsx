@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import useSWR from "swr";
 import { fetcher } from "../lib/fetcher";
 
@@ -10,6 +11,7 @@ interface StatsData {
 }
 
 const HEATMAP_CHARS = [" ", "░", "▒", "▓", "█"];
+const MOBILE_DAYS = 8;
 
 function getDateRange(startDate: string, endDate: string): string[] {
     const dates: string[] = [];
@@ -31,21 +33,22 @@ function formatDateLabel(dateStr: string): string {
     return `${month} ${day}`;
 }
 
-function verticalBarChart(commitsByDay: Record<string, number>, days: string[]): string[] {
+function verticalBarChart(commitsByDay: Record<string, number>, days: string[], globalMax: number): string[] {
     const values = days.map((day) => commitsByDay[day] || 0);
-    const max = Math.max(...values, 1);
-    const height = max;
+    const height = Math.ceil(globalMax / 4);
+    const max = globalMax;
     const lines: string[] = [];
     const barWidth = 4;
+    const step = max / height;
 
     for (let row = height; row >= 1; row--) {
-        const threshold = row;
+        const threshold = row * step;
         const yLabel = Math.round(threshold).toString().padStart(4);
 
         const bars = values
             .map((v) => {
                 if (v >= threshold) return ' <span class="green">██</span> ';
-                if (v >= threshold - 0.5) return ' <span class="green">▄▄</span> ';
+                if (v >= threshold - step / 2) return ' <span class="green">▄▄</span> ';
                 return "    ";
             })
             .join("");
@@ -79,6 +82,16 @@ function heatmapRow(commitsByDay: Record<string, number>, days: string[]): strin
 }
 
 export function CommitChart() {
+    const [isMobile, setIsMobile] = useState(false);
+    const [mobileOffset, setMobileOffset] = useState(0);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth <= 600);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
     const { data, error, mutate } = useSWR<StatsData>("/api/stats", fetcher, {
         refreshInterval: 60000,
     });
@@ -139,16 +152,52 @@ export function CommitChart() {
 
     const { commitsByDay, event } = data;
     const days = getDateRange(event.startDate, event.endDate);
-    const chart = verticalBarChart(commitsByDay, days);
+    const globalMax = Math.max(...Object.values(commitsByDay), 1);
+    
+    const maxOffset = Math.max(0, days.length - MOBILE_DAYS);
+    const displayDays = isMobile ? days.slice(mobileOffset, mobileOffset + MOBILE_DAYS) : days;
+    
+    const chart = verticalBarChart(commitsByDay, displayDays, globalMax);
     const heatmap = heatmapRow(commitsByDay, days);
 
     const startLabel = formatDateLabel(event.startDate);
     const endLabel = formatDateLabel(event.endDate);
 
+    const canGoBack = mobileOffset > 0;
+    const nextPageDays = days.slice(mobileOffset + MOBILE_DAYS, mobileOffset + MOBILE_DAYS * 2);
+    const hasCommitsOnNextPage = nextPageDays.some(day => (commitsByDay[day] || 0) > 0);
+    const canGoForward = mobileOffset < maxOffset && hasCommitsOnNextPage;
+
+    const chartLines = isMobile ? chart.slice(0, -1) : chart;
+    
+    const buildMobileLabelsRow = () => {
+        if (!isMobile) return null;
+        const originalLabels = chart[chart.length - 1];
+        const match = originalLabels.match(/^(\s*)(.*)$/);
+        const padding = match ? match[1] + '  ' : '';
+        const labels = match ? match[2] : originalLabels;
+        
+        return (
+            <pre className="mobile-labels-row">
+                {padding}
+                <span 
+                    className={`nav-text ${canGoBack ? '' : 'disabled'}`}
+                    onClick={() => canGoBack && setMobileOffset(Math.max(0, mobileOffset - MOBILE_DAYS))}
+                >{"<"}</span>
+                {" "}{labels}{" "}
+                <span 
+                    className={`nav-text ${canGoForward ? '' : 'disabled'}`}
+                    onClick={() => canGoForward && setMobileOffset(Math.min(maxOffset, mobileOffset + MOBILE_DAYS))}
+                >{">"}</span>
+            </pre>
+        );
+    };
+
     return (
         <section className="chart-section">
             <h2>COMMIT ACTIVITY</h2>
-            <pre className="bar-chart" dangerouslySetInnerHTML={{ __html: chart.join("\n") }} />
+            <pre className="bar-chart" dangerouslySetInnerHTML={{ __html: chartLines.join("\n") }} />
+            {buildMobileLabelsRow()}
             <div className="heatmap-container">
                 <pre className="heatmap">
                     <span className="date-label">{startLabel}</span> [
