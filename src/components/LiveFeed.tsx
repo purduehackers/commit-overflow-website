@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import useSWR from "swr";
+
+import useSWRInfinite from "swr/infinite";
 import { fetcher } from "../lib/fetcher";
 
 interface Attachment {
@@ -18,8 +19,14 @@ interface RecentCommit {
     attachments: { url: string; type: string }[];
 }
 
-interface StatsData {
-    recentCommits: RecentCommit[];
+interface PaginatedCommitsResponse {
+    commits: RecentCommit[];
+    pagination: {
+        page: number;
+        limit: number;
+        hasMore: boolean;
+        total: number;
+    };
 }
 
 function isVideo(type: string): boolean {
@@ -218,9 +225,18 @@ function Lightbox({ attachments, currentIndex, onClose, onPrev, onNext }: Lightb
 }
 
 export function LiveFeed() {
-    const { data, error, mutate } = useSWR<StatsData>("/api/stats", fetcher, {
-        refreshInterval: 10000,
-    });
+    const getKey = (pageIndex: number, previousPageData: PaginatedCommitsResponse | null) => {
+        if (previousPageData && !previousPageData.pagination.hasMore) return null;
+        return `/api/commits?page=${pageIndex + 1}&limit=10`;
+    };
+
+    const { data, error, size, setSize, isValidating, mutate } =
+        useSWRInfinite<PaginatedCommitsResponse>(getKey, fetcher, {
+            refreshInterval: 10000,
+            revalidateFirstPage: true,
+        });
+
+    const sentinelRef = useRef<HTMLDivElement>(null);
 
     const [lightbox, setLightbox] = useState<LightboxState>({
         isOpen: false,
@@ -229,6 +245,28 @@ export function LiveFeed() {
     });
 
     const triggerElementRef = useRef<HTMLElement | null>(null);
+
+    const allCommits = data ? data.flatMap((page) => page.commits) : [];
+    const isLoadingInitial = !data && !error;
+    const isLoadingMore = isValidating && data && data.length === size;
+    const hasMore = data ? data[data.length - 1]?.pagination.hasMore : false;
+
+    useEffect(() => {
+        const sentinel = sentinelRef.current;
+        if (!sentinel || !hasMore) return;
+
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting && !isValidating) {
+                    setSize((s) => s + 1);
+                }
+            },
+            { rootMargin: "100px" },
+        );
+
+        observer.observe(sentinel);
+        return () => observer.disconnect();
+    }, [hasMore, isValidating, setSize]);
 
     const openLightbox = (
         attachments: Attachment[],
@@ -296,7 +334,7 @@ export function LiveFeed() {
         );
     }
 
-    if (!data) {
+    if (isLoadingInitial) {
         const skeletonItems = Array(5)
             .fill(0)
             .map((_, i) => (
@@ -338,7 +376,7 @@ export function LiveFeed() {
         );
     }
 
-    const { recentCommits } = data;
+    const recentCommits = allCommits;
 
     return (
         <section className="feed-section" aria-labelledby="feed-heading">
@@ -530,6 +568,20 @@ export function LiveFeed() {
                             )}
                         </div>
                     ))
+                )}
+                {hasMore && (
+                    <div
+                        ref={sentinelRef}
+                        className="feed-sentinel"
+                        style={{ padding: "1rem 0", textAlign: "center" }}
+                    >
+                        {isLoadingMore && <span className="muted">Loading more...</span>}
+                    </div>
+                )}
+                {!hasMore && allCommits.length > 0 && (
+                    <div className="feed-end muted" style={{ padding: "1rem 0", textAlign: "center" }}>
+                        ── End of feed ──
+                    </div>
                 )}
             </div>
             {lightbox.isOpen && (
