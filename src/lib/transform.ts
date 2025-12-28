@@ -253,6 +253,8 @@ const DIFF_PATTERN =
     /^https?:\/\/(?<domain>[^/]+)\/(?<user>[^/]+)\/(?<repo>[^/]+)\/compare\/(?<from>.+)(?<dots>\.\.\.?)(?<to>.+)$/i;
 const ISSUE_PULL_PATTERN =
     /^https?:\/\/(?<domain>[^/]+)\/(?<user>[^/]+)\/(?<repo>[^/]+)\/(?:pull|issues)\/(?<num>\d+)$/i;
+const FILE_PATTERN =
+    /^https?:\/\/(?<domain>[^/]+)\/(?<user>[^/]+)\/(?<repo>[^/]+)\/(?:tree|blob)\/(?<rev>[^/]+)\/(?<path>.*)$/;
 const REPO_PATTERN = /^https?:\/\/(?<domain>[^/]+)\/(?<user>[^/]+)\/(?<repo>[^/]+)$/i;
 export function rehypeGitLinks() {
     return (tree: Node) => {
@@ -292,6 +294,13 @@ export function rehypeGitLinks() {
                 newContent = [
                     ["github-repo", repoName(domain, user, repo)],
                     ["github-num", `#${num}`],
+                ];
+            } else if ((match = href.match(FILE_PATTERN))) {
+                const { domain, user, repo, rev, path } = match.groups!;
+                newContent = [
+                    ["github-repo", repoName(domain, user, repo)],
+                    ["github-file", `${path}`],
+                    ["github-sha", abbreviateRev(rev)],
                 ];
             } else if ((match = href.match(REPO_PATTERN))) {
                 const { domain, user, repo } = match.groups!;

@@ -507,6 +507,12 @@ ul ul ul li::before {
     content: "@";
 }
 
+.github-file::before {
+    content: "/";
+    opacity: 0.7;
+    margin-inline-end: 0.25em;
+}
+
 .github-num {
     opacity: 0.8;
 }
