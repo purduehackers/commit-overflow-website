@@ -24,6 +24,7 @@ import {
     remarkAutolink,
     smartTruncate,
 } from "../../lib/transform";
+import type { SortKey } from "../../components/Leaderboard";
 
 // Cache TTL for the full stats response (in seconds)
 const STATS_CACHE_TTL = 15;
@@ -65,6 +66,16 @@ interface UserRow {
     discord_username: string;
 }
 
+interface LeaderboardRow {
+    rank: number;
+    odId: string;
+    username: string;
+    avatarUrl: string;
+    totalCommits: number;
+    totalDays: number;
+    currentStreak: number;
+}
+
 interface StatsResponse {
     event: ReturnType<typeof getEventProgress>;
     stats: {
@@ -74,15 +85,7 @@ interface StatsResponse {
         commitsToday: number;
     };
     commitsByDay: Record<string, number>;
-    leaderboard: Array<{
-        rank: number;
-        odId: string;
-        username: string;
-        avatarUrl: string;
-        totalCommits: number;
-        totalDays: number;
-        currentStreak: number;
-    }>;
+    leaderboards: Record<SortKey, LeaderboardRow[]>;
     recentCommits: Array<{
         odId: string;
         username: string;
@@ -171,9 +174,7 @@ async function computeStats(): Promise<StatsResponse> {
         });
     }
 
-    userStats.sort((a, b) => b.totalCommits - a.totalCommits);
-
-    const leaderboard = userStats.slice(0, 10).map((user, index) => {
+    const toLeaderboardRow = (user: (typeof userStats)[number], index: number) => {
         const avatarUrl = `/api/avatar/${user.odId}.png`;
         return {
             rank: index + 1,
@@ -184,7 +185,21 @@ async function computeStats(): Promise<StatsResponse> {
             totalDays: user.totalDays,
             currentStreak: user.currentStreak,
         };
-    });
+    };
+    const leaderboards: StatsResponse["leaderboards"] = {
+        commits: userStats
+            .toSorted((a, b) => b.totalCommits - a.totalCommits)
+            .slice(0, 10)
+            .map(toLeaderboardRow),
+        days: userStats
+            .toSorted((a, b) => b.totalDays - a.totalDays)
+            .slice(0, 10)
+            .map(toLeaderboardRow),
+        streak: userStats
+            .toSorted((a, b) => b.currentStreak - a.currentStreak)
+            .slice(0, 10)
+            .map(toLeaderboardRow),
+    };
 
     const today = getCommitDay(new Date().toISOString(), DEFAULT_TIMEZONE);
     const commitsToday = commitsByDay[today] || 0;
@@ -234,7 +249,7 @@ async function computeStats(): Promise<StatsResponse> {
             commitsToday,
         },
         commitsByDay,
-        leaderboard,
+        leaderboards,
         recentCommits,
         lastUpdated: new Date().toISOString(),
     };

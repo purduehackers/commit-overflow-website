@@ -13,10 +13,10 @@ interface LeaderboardEntry {
 }
 
 interface StatsData {
-    leaderboard: LeaderboardEntry[];
+    leaderboards: Record<SortKey, LeaderboardEntry[]>;
 }
 
-type SortKey = "commits" | "days" | "streak";
+export type SortKey = "commits" | "days" | "streak";
 
 export function Leaderboard() {
     const [sortBy, setSortBy] = useState<SortKey>("commits");
@@ -96,19 +96,6 @@ export function Leaderboard() {
         );
     }
 
-    const sortedLeaderboard = [...data.leaderboard].sort((a, b) => {
-        switch (sortBy) {
-            case "commits":
-                return b.totalCommits - a.totalCommits;
-            case "days":
-                return b.totalDays - a.totalDays;
-            case "streak":
-                return b.currentStreak - a.currentStreak;
-            default:
-                return 0;
-        }
-    });
-
     return (
         <section className="leaderboard-section w-full" data-sort={sortBy}>
             <div className="leaderboard-header">
@@ -172,7 +159,7 @@ export function Leaderboard() {
                     </tr>
                 </thead>
                 <tbody>
-                    {sortedLeaderboard.map((entry, index) => (
+                    {data.leaderboards[sortBy].map((entry, index) => (
                         <tr key={entry.odId}>
                             <td>{(index + 1).toString().padStart(2)}</td>
                             <td className="hacker-cell">
