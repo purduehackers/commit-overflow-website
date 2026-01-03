@@ -59,7 +59,7 @@ interface CommitItem {
     threadId: string;
     messageId: string;
     messageHtml: string;
-    attachments: Array<{ url: string; type: string, filename: string }>;
+    attachments: Array<{ url: string; type: string; filename: string }>;
     committedAt: string;
     relativeTime: string;
 }
