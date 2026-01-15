@@ -9,14 +9,10 @@ const callbackURL = Astro.url.searchParams.get("callbackURL") || "/receipt";
 
 <Layout title="Sign In | Commit Overflow 2025">
     <Header />
-    
+
     <section class="login-page">
         <h2>Sign in to view your receipt</h2>
-        <p>Connect your Discord account to see your Commit Overflow stats.</p>
-        
         <LoginButton client:load callbackURL={callbackURL} />
-        
-        <p class="note">You must have participated in Commit Overflow 2025 to view your receipt.</p>
     </section>
 
     <Footer />
@@ -25,7 +21,7 @@ const callbackURL = Astro.url.searchParams.get("callbackURL") || "/receipt";
 <style>
     .login-page {
         text-align: center;
-        padding: 3rem 1rem;
+        padding: 8rem 1rem 3rem;
     }
 
     .login-page h2 {
@@ -54,6 +50,5 @@ const callbackURL = Astro.url.searchParams.get("callbackURL") || "/receipt";
 
     .note {
         margin-top: 2rem;
-        font-size: 0.85rem;
     }
 </style>

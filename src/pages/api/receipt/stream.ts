@@ -41,7 +41,10 @@ export const GET: APIRoute = async ({ url }) => {
             const messageDataMap = new Map<number, MessageData>();
             await Promise.all(
                 receiptData.commits.map(async (commit) => {
-                    const message = await getDiscordMessage(receiptData.threadId, commit.messageId);
+                    const message = await getDiscordMessage(
+                        receiptData.threadId,
+                        commit.messageId,
+                    );
                     if (message) {
                         const isForwarded = message.message_reference?.type === 1;
                         const forwardedMessage = isForwarded

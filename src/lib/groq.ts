@@ -1,11 +1,13 @@
 import { GROQ_API_KEY } from "astro:env/server";
+import { Result, TaggedError } from "better-result";
 import { cacheGet, cacheSet, TTL } from "./redis";
 
 const GROQ_API = "https://api.groq.com/openai/v1/chat/completions";
 const MAX_CONCURRENT = 3;
-const MAX_RETRIES = 5;
 const BASE_DELAY_MS = 2000;
 const REQUEST_DELAY_MS = 500;
+const MAX_SUMMARY_LENGTH = 38;
+const MAX_RETRIES = 5;
 
 interface ChatCompletionResponse {
     choices: { message: { content: string } }[];
@@ -16,19 +18,43 @@ interface Attachment {
     content_type?: string;
 }
 
+interface SummaryInput {
+    content: string;
+    attachments: Attachment[];
+    dayContext: string[];
+}
+
+class SummaryTooLongError extends TaggedError("SummaryTooLongError")<{
+    summary: string;
+    message: string;
+}>() {
+    constructor(summary: string) {
+        super({ summary, message: `Summary exceeds ${MAX_SUMMARY_LENGTH} chars` });
+    }
+}
+
+class EmptyResponseError extends TaggedError("EmptyResponseError")<{
+    message: string;
+}>() {}
+
+class ApiError extends TaggedError("ApiError")<{
+    status: number;
+    message: string;
+}>() {}
+
+class NoInputError extends TaggedError("NoInputError")<{
+    message: string;
+}>() {}
+
 let activeRequests = 0;
-const queue: Array<{
-    resolve: (value: void) => void;
-}> = [];
+const queue: Array<{ resolve: () => void }> = [];
 
 async function acquireSlot(): Promise<void> {
     if (activeRequests < MAX_CONCURRENT) {
         activeRequests++;
         return;
     }
-    return new Promise((resolve) => {
-        queue.push({ resolve });
-    });
+    return new Promise((resolve) => queue.push({ resolve }));
 }
 
 function releaseSlot(): void {
@@ -40,24 +66,64 @@ function releaseSlot(): void {
     }
 }
 
-function hashPrompt(prompt: string): string {
-    let hash = 0;
-    for (let i = 0; i < prompt.length; i++) {
-        const char = prompt.charCodeAt(i);
-        hash = (hash << 5) - hash + char;
-        hash |= 0;
+const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const hash = (s: string): string => {
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+        h = (h << 5) - h + s.charCodeAt(i);
+        h |= 0;
     }
-    return hash.toString(36);
-}
+    return h.toString(36);
+};
 
-async function fetchWithRetry(
-    prompt: string,
-    retries = MAX_RETRIES,
-): Promise<string | null> {
-    for (let attempt = 0; attempt < retries; attempt++) {
-        await new Promise((r) => setTimeout(r, REQUEST_DELAY_MS));
+const validateInput = (input: SummaryInput): Result<SummaryInput, NoInputError> => {
+    const hasContent = input.content?.trim().length > 0;
+    const hasAttachments = input.attachments.length > 0;
+    if (!hasContent && !hasAttachments) {
+        return Result.err(new NoInputError({ message: "No content or attachments" }));
+    }
+    return Result.ok(input);
+};
 
-        try {
+const formatContext = (ctx: string[]): string =>
+    ctx.length > 0 ? `<context>\n${ctx.map((c) => `- ${c}`).join("\n")}\n</context>\n\n` : "";
+
+const formatMessage = (content: string): string =>
+    content.trim() ? `<message>${content}</message>\n` : "";
+
+const formatAttachments = (attachments: Attachment[]): string => {
+    if (attachments.length === 0) return "";
+    const types = attachments.map((a) => a.content_type?.split("/")[0] ?? "file");
+    return `<attachments>${types.join(", ")}</attachments>\n`;
+};
+
+const buildPrompt = (input: SummaryInput): string =>
+    formatContext(input.dayContext) +
+    "<commit>\n" +
+    formatMessage(input.content) +
+    formatAttachments(input.attachments) +
+    "</commit>";
+
+const extractContent = (data: ChatCompletionResponse): Result<string, EmptyResponseError> => {
+    const content = data.choices[0]?.message?.content?.trim();
+    if (!content) return Result.err(new EmptyResponseError({ message: "Empty response" }));
+    return Result.ok(content);
+};
+
+const validateLength = (summary: string): Result<string, SummaryTooLongError> => {
+    if (summary.length > MAX_SUMMARY_LENGTH) {
+        return Result.err(new SummaryTooLongError(summary));
+    }
+    return Result.ok(summary);
+};
+
+const normalize = (s: string): string => s.toLowerCase();
+
+const fetchCompletion = (prompt: string): Promise<Result<ChatCompletionResponse, ApiError>> =>
+    Result.tryPromise(
+        async () => {
+            await delay(REQUEST_DELAY_MS);
             const response = await fetch(GROQ_API, {
                 method: "POST",
                 headers: {
@@ -78,87 +144,56 @@ async function fetchWithRetry(
                     temperature: 0.3,
                 }),
             });
+            if (!response.ok) throw new ApiError({ status: response.status, message: "API failed" });
+            return response.json();
+        },
+        { retry: { times: MAX_RETRIES, delayMs: BASE_DELAY_MS, backoff: "exponential" } },
+    ).then((r) => r.mapError(() => new ApiError({ status: 0, message: "Request failed" })));
 
-            if (response.status === 429 || response.status >= 500) {
-                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-                await new Promise((r) => setTimeout(r, delay));
-                continue;
-            }
-
-            if (!response.ok) {
-                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-                await new Promise((r) => setTimeout(r, delay));
-                continue;
-            }
-
-            const data: ChatCompletionResponse = await response.json();
-            const result = data.choices[0]?.message?.content?.trim();
-
-            if (!result) {
-                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-                await new Promise((r) => setTimeout(r, delay));
-                continue;
-            }
-
-            return result;
-        } catch {
-            if (attempt < retries - 1) {
-                const delay = BASE_DELAY_MS * Math.pow(2, attempt);
-                await new Promise((r) => setTimeout(r, delay));
-                continue;
-            }
-            return null;
-        }
+const checkCache = async (key: string): Promise<Result<string, null>> => {
+    const cached = await cacheGet<string>(key);
+    if (cached && cached.length <= MAX_SUMMARY_LENGTH) {
+        await delay(50);
+        return Result.ok(cached);
     }
-    return null;
-}
+    return Result.err(null);
+};
+
+const generateSummary = (prompt: string) =>
+    Result.gen(async function* () {
+        const response = yield* Result.await(fetchCompletion(prompt));
+        const content = yield* extractContent(response);
+        const normalized = normalize(content);
+        const validated = yield* validateLength(normalized);
+        return Result.ok(validated);
+    });
+
+const summarizePipeline = (input: SummaryInput) =>
+    Result.gen(async function* () {
+        const validInput = yield* validateInput(input);
+        const prompt = buildPrompt(validInput);
+        const cacheKey = `groq:summary:${hash(prompt)}`;
+
+        const cached = await checkCache(cacheKey);
+        if (Result.isOk(cached)) {
+            return Result.ok(cached.value);
+        }
+
+        await acquireSlot();
+        try {
+            const summary = yield* Result.await(generateSummary(prompt));
+            await cacheSet(cacheKey, summary, TTL.COMMIT_SUMMARY);
+            return Result.ok(summary);
+        } finally {
+            releaseSlot();
+        }
+    });
 
 export async function summarizeCommitMessage(
     content: string,
     attachments: Attachment[] = [],
     dayContext: string[] = [],
 ): Promise<string | null> {
-    const hasContent = content && content.trim().length > 0;
-    const hasAttachments = attachments.length > 0;
-
-    if (!hasContent && !hasAttachments) return null;
-
-    let prompt = "";
-
-    if (dayContext.length > 0) {
-        prompt += `<context>\n${dayContext.map((c) => `- ${c}`).join("\n")}\n</context>\n\n`;
-    }
-
-    prompt += "<commit>\n";
-    if (hasContent) {
-        prompt += `<message>${content}</message>\n`;
-    }
-    if (hasAttachments) {
-        const attachmentDescriptions = attachments.map((a) => {
-            const type = a.content_type?.split("/")[0] ?? "file";
-            return type;
-        });
-        prompt += `<attachments>${attachmentDescriptions.join(", ")}</attachments>\n`;
-    }
-    prompt += "</commit>";
-
-    const cacheKey = `groq:summary:${hashPrompt(prompt)}`;
-    const cached = await cacheGet<string>(cacheKey);
-    if (cached) {
-        await new Promise((r) => setTimeout(r, 50));
-        return cached;
-    }
-
-    await acquireSlot();
-    try {
-        const result = await fetchWithRetry(prompt);
-        if (result) {
-            const lowercased = result.toLowerCase();
-            await cacheSet(cacheKey, lowercased, TTL.COMMIT_SUMMARY);
-            return lowercased;
-        }
-        return result;
-    } finally {
-        releaseSlot();
-    }
+    const result = await summarizePipeline({ content, attachments, dayContext });
+    return Result.isOk(result) ? result.value : null;
 }
