@@ -41,7 +41,6 @@
     display: flex;
     align-items: center;
     gap: 0.5ch;
-    font-size: 0.85rem;
 }
 
 .theme-label {
@@ -183,7 +182,6 @@ ul ul ul li::before {
 
 .section-title .meta {
     color: var(--muted);
-    font-size: 0.85rem;
 }
 
 /* Live indicator */
@@ -210,7 +208,6 @@ ul ul ul li::before {
 /* ASCII art container */
 .ascii {
     white-space: pre;
-    font-size: 0.75rem;
     line-height: 1.2;
     overflow-x: auto;
     user-select: none;
@@ -332,7 +329,6 @@ ul ul ul li::before {
 
 .leaderboard-header h2 {
     font-weight: normal;
-    font-size: 1rem;
 }
 
 .sort-toggle {
@@ -467,31 +463,29 @@ ul ul ul li::before {
     padding: 0.15em 0.4em;
     border-radius: 3px;
     font-family: var(--font);
-    font-size: 0.9em;
 }
 
 .github-commit {
-    background: rgba(35, 134, 54, 0.15);
-    color: #238636;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--fg);
 }
 
 .github-pr {
-    background: rgba(130, 80, 223, 0.15);
-    color: #8250df;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--fg);
 }
 
 .github-issue {
-    background: rgba(35, 134, 54, 0.15);
-    color: #238636;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--fg);
 }
 
 .github-repo-link {
-    background: rgba(110, 118, 129, 0.15);
-    color: #6e7681;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--fg);
 }
 
 .github-icon {
-    font-size: 0.9em;
 }
 
 .github-repo {
@@ -500,7 +494,6 @@ ul ul ul li::before {
 
 .github-sha {
     opacity: 0.7;
-    font-size: 0.85em;
 }
 
 .github-sha::before {
@@ -539,9 +532,18 @@ ul ul ul li::before {
     color: #5865f2;
 }
 
+a.mention-channel {
+    text-decoration: none;
+}
+
+a.mention-channel:hover {
+    background: rgba(88, 101, 242, 0.3);
+    text-decoration: none;
+}
+
 .mention-role {
-    background: rgba(203, 166, 247, 0.15);
-    color: #cba6f7;
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--fg);
 }
 
 /* Feed */
@@ -557,7 +559,6 @@ ul ul ul li::before {
 
 .feed-link {
     display: block;
-    font-size: 0.9rem;
     color: var(--muted);
 }
 
@@ -593,10 +594,6 @@ astro-island {
 
 /* Mobile responsive */
 @media (max-width: 600px) {
-    html {
-        font-size: 12px;
-    }
-
     html,
     body {
         overflow-x: hidden;
@@ -607,7 +604,6 @@ astro-island {
     }
 
     .ascii {
-        font-size: 0.5rem;
         max-width: 100%;
         overflow-x: auto;
     }
@@ -624,10 +620,6 @@ astro-island {
         order: 3;
         width: 100%;
         flex: none;
-    }
-
-    .bar-chart {
-        font-size: 12px;
     }
 
     .chart-section {
@@ -649,14 +641,6 @@ astro-island {
         display: inline-block;
     }
 
-    .heatmap-chars {
-        font-size: 12px;
-    }
-
-    .heatmap-legend {
-        font-size: 12px;
-    }
-
     .mobile-chart-nav {
         display: flex;
         align-items: center;
@@ -668,7 +652,6 @@ astro-island {
         justify-content: center;
         align-items: center;
         font-family: inherit;
-        font-size: 12px;
         gap: 0.5rem;
     }
 

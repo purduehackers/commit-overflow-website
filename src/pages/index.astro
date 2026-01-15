@@ -1,11 +1,8 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import Header from "../components/Header.astro";
-import { Progress } from "../components/Progress";
-import { Stats } from "../components/Stats";
+import Summary from "../components/Summary.astro";
 import { CommitChart } from "../components/CommitChart";
-import { Leaderboard } from "../components/Leaderboard";
-import { LiveFeed } from "../components/LiveFeed";
 import Welcome from "../components/Welcome.astro";
 import Footer from "../components/Footer.astro";
 ---
@@ -17,23 +14,11 @@ import Footer from "../components/Footer.astro";
 
     <hr class="divider" />
 
-    <Progress client:load />
+    <Summary />
 
     <hr class="divider" />
 
-    <Stats client:load />
-
-    <hr class="divider" />
-
-    <CommitChart client:visible />
-
-    <hr class="divider" />
-
-    <Leaderboard client:visible />
-
-    <hr class="divider" />
-
-    <LiveFeed client:visible />
+    <CommitChart client:load />
 
     <Footer />
 </Layout>

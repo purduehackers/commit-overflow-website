@@ -1,14 +1,32 @@
 import { useState, useEffect } from "react";
-import useSWR from "swr";
-import { fetcher } from "../lib/fetcher";
 
-interface StatsData {
-    commitsByDay: Record<string, number>;
-    event: {
-        startDate: string;
-        endDate: string;
-    };
-}
+const COMMITS_BY_DAY: Record<string, number> = {
+    "2025-12-22": 24,
+    "2025-12-23": 73,
+    "2025-12-24": 58,
+    "2025-12-25": 84,
+    "2025-12-26": 63,
+    "2025-12-27": 52,
+    "2025-12-28": 53,
+    "2025-12-29": 49,
+    "2025-12-30": 43,
+    "2025-12-31": 40,
+    "2026-01-01": 51,
+    "2026-01-02": 52,
+    "2026-01-03": 44,
+    "2026-01-04": 32,
+    "2026-01-05": 51,
+    "2026-01-06": 35,
+    "2026-01-07": 55,
+    "2026-01-08": 42,
+    "2026-01-09": 32,
+    "2026-01-10": 41,
+    "2026-01-11": 34,
+    "2026-01-12": 112,
+};
+
+const EVENT_START = "2025-12-22";
+const EVENT_END = "2026-01-12";
 
 const HEATMAP_CHARS = [" ", "░", "▒", "▓", "█"];
 const MOBILE_DAYS = 8;
@@ -96,66 +114,8 @@ export function CommitChart() {
         return () => window.removeEventListener("resize", checkMobile);
     }, []);
 
-    const { data, error, mutate } = useSWR<StatsData>("/api/stats", fetcher, {
-        refreshInterval: 60000,
-    });
-
-    if (error) {
-        return (
-            <section className="chart-section">
-                <h2>COMMIT ACTIVITY</h2>
-                <pre style={{ color: "var(--error, #ff6b6b)" }}>
-                    ╳ Failed to load chart data.{" "}
-                    <button
-                        onClick={() => mutate()}
-                        style={{
-                            background: "none",
-                            border: "none",
-                            color: "inherit",
-                            fontFamily: "inherit",
-                            fontSize: "inherit",
-                            cursor: "pointer",
-                            textDecoration: "underline",
-                        }}
-                    >
-                        [retry]
-                    </button>
-                </pre>
-            </section>
-        );
-    }
-
-    if (!data) {
-        const skeletonBars = Array(10)
-            .fill(0)
-            .map(() => {
-                const yLabel = "░░░░";
-                const bars = "░░░░".repeat(22);
-                return `${yLabel} │${bars}│`;
-            })
-            .join("\n");
-        const skeletonLabels = "     └" + "─".repeat(88) + "┘\n      " + "░░  ".repeat(22);
-
-        return (
-            <section className="chart-section">
-                <h2>COMMIT ACTIVITY</h2>
-                <pre className="bar-chart skeleton">{skeletonBars + "\n" + skeletonLabels}</pre>
-                <div className="heatmap-container">
-                    <pre className="heatmap skeleton">
-                        <span className="date-label">░░░ ░░</span> [
-                        <span className="heatmap-chars">{"░░".repeat(22)}</span>]{" "}
-                        <span className="date-label">░░░ ░░</span>
-                    </pre>
-                    <p className="heatmap-legend">
-                        <span className="unselectable">░▒▓█</span> = commit density
-                    </p>
-                </div>
-            </section>
-        );
-    }
-
-    const { commitsByDay, event } = data;
-    const days = getDateRange(event.startDate, event.endDate);
+    const commitsByDay = COMMITS_BY_DAY;
+    const days = getDateRange(EVENT_START, EVENT_END);
     const rawMax = Math.max(...Object.values(commitsByDay), 1);
     const globalMax = Math.ceil(rawMax / 20) * 20;
 
@@ -165,9 +125,9 @@ export function CommitChart() {
     const chart = verticalBarChart(commitsByDay, displayDays, globalMax);
     const heatmap = heatmapRow(commitsByDay, isMobile ? displayDays : days);
 
-    const startLabel = formatDateLabel(isMobile ? displayDays[0] : event.startDate);
+    const startLabel = formatDateLabel(isMobile ? displayDays[0] : EVENT_START);
     const endLabel = formatDateLabel(
-        isMobile ? displayDays[displayDays.length - 1] : event.endDate,
+        isMobile ? displayDays[displayDays.length - 1] : EVENT_END,
     );
 
     const canGoBack = mobileOffset > 0;
@@ -217,16 +177,6 @@ export function CommitChart() {
                 dangerouslySetInnerHTML={{ __html: chartLines.join("\n") }}
             />
             {buildMobileLabelsRow()}
-            <div className="heatmap-container">
-                <pre className="heatmap">
-                    <span className="date-label">{startLabel}</span> [
-                    <span className="heatmap-chars">{heatmap}</span>]{" "}
-                    <span className="date-label">{endLabel}</span>
-                </pre>
-                <p className="heatmap-legend">
-                    <span className="unselectable">░▒▓█</span> = commit density
-                </p>
-            </div>
         </section>
     );
 }
