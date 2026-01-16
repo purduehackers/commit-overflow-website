@@ -6,14 +6,70 @@ interface ReceiptProps {
     discordUserId: string;
 }
 
+const getTabFromUrl = (): ReceiptType => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    return tab === "commits" ? "commits" : "summary";
+};
+
+const updateTabParam = (tab: ReceiptType) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", tab);
+    window.history.replaceState({}, "", url.toString());
+};
+
+const SPINNER_FRAMES = ["|", "/", "-", "\\"];
+
+function useSpinner(active: boolean): string {
+    const [frame, setFrame] = useState(0);
+
+    useEffect(() => {
+        if (!active) return;
+        const interval = setInterval(() => {
+            setFrame((f) => (f + 1) % SPINNER_FRAMES.length);
+        }, 100);
+        return () => clearInterval(interval);
+    }, [active]);
+
+    return active ? SPINNER_FRAMES[frame] : "";
+}
+
+function addSpinnerToDay(receipt: string, day: string, spinner: string): string {
+    const dayPattern = new RegExp(
+        `(║ ${day} \\(\\d+ commits?\\))( +)(║)`,
+    );
+    return receipt.replace(dayPattern, (_match, prefix, spaces, suffix) => {
+        const spinnerWithBrackets = `[${spinner}] `;
+        const newSpaces = spaces.slice(0, -spinnerWithBrackets.length);
+        if (newSpaces.length < 1) return _match;
+        return `${prefix}${newSpaces}${spinnerWithBrackets}${suffix}`;
+    });
+}
+
 export function Receipt({ discordUserId }: ReceiptProps) {
     const [receiptType, setReceiptType] = useState<ReceiptType>("summary");
+
+    useEffect(() => {
+        const urlTab = getTabFromUrl();
+        if (urlTab !== receiptType) {
+            setReceiptType(urlTab);
+        }
+    }, []);
+
+    useEffect(() => {
+        updateTabParam(receiptType);
+    }, [receiptType]);
+
     const [receiptData, setReceiptData] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [streaming, setStreaming] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [loadingDays, setLoadingDays] = useState<Set<string>>(new Set());
     const abortControllerRef = useRef<AbortController | null>(null);
+    const baseReceiptRef = useRef<string>("");
+
+    const spinner = useSpinner(loadingDays.size > 0);
 
     const fetchReceipt = useCallback(async () => {
         if (abortControllerRef.current) {
@@ -23,6 +79,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
         setLoading(true);
         setStreaming(false);
         setError(null);
+        setLoadingDays(new Set());
 
         if (receiptType === "commits") {
             abortControllerRef.current = new AbortController();
@@ -43,6 +100,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                 let buffer = "";
                 let currentReceipt = "";
                 const summaries = new Map<number, { time: string; line: string }>();
+                const activeDays = new Set<string>();
 
                 setLoading(false);
                 setStreaming(true);
@@ -61,13 +119,20 @@ export function Receipt({ discordUserId }: ReceiptProps) {
 
                         if (data.type === "init") {
                             currentReceipt = data.receipt;
+                            baseReceiptRef.current = currentReceipt;
                             setReceiptData(currentReceipt);
+                        } else if (data.type === "day_start") {
+                            activeDays.add(data.day);
+                            setLoadingDays(new Set(activeDays));
+                        } else if (data.type === "day_done") {
+                            activeDays.delete(data.day);
+                            setLoadingDays(new Set(activeDays));
                         } else if (data.type === "summary") {
                             summaries.set(data.commitId, {
                                 time: data.time,
                                 line: data.line,
                             });
-                            let updated = currentReceipt;
+                            let updated = baseReceiptRef.current;
                             for (const [, { time, line: newLine }] of summaries) {
                                 const placeholder = `  ${time} - ...`;
                                 const paddedPlaceholder = placeholder.padEnd(48);
@@ -77,9 +142,11 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                                     `║ ${paddedLine} ║`,
                                 );
                             }
+                            baseReceiptRef.current = updated;
                             setReceiptData(updated);
                         } else if (data.type === "done") {
                             setStreaming(false);
+                            setLoadingDays(new Set());
                         }
                     }
                 }
@@ -88,6 +155,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                 setError(err instanceof Error ? err.message : "Failed to load receipt");
                 setLoading(false);
                 setStreaming(false);
+                setLoadingDays(new Set());
             }
         } else {
             try {
@@ -117,6 +185,15 @@ export function Receipt({ discordUserId }: ReceiptProps) {
             }
         };
     }, [fetchReceipt]);
+
+    const displayReceipt = useCallback(() => {
+        if (!receiptData) return null;
+        let display = receiptData;
+        for (const day of loadingDays) {
+            display = addSpinnerToDay(display, day, spinner);
+        }
+        return display;
+    }, [receiptData, loadingDays, spinner]);
 
     const downloadReceipt = async () => {
         setDownloading(true);
@@ -213,7 +290,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                     </pre>
                 </div>
             ) : (
-                <pre className="receipt">{receiptData}</pre>
+                <pre className="receipt">{displayReceipt()}</pre>
             )}
             </div>
 

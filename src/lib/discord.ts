@@ -111,7 +111,6 @@ async function queuedDiscordFetch<T>(url: string): Promise<T | null> {
     return discordQueue.add(async () => {
         const response = await fetch(url, {
             headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-            signal: createTimeoutSignal(),
         });
 
         if (response.status === 429) {

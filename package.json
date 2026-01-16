@@ -12,6 +12,7 @@
         "astro": "astro"
     },
     "dependencies": {
+        "@ai-sdk/groq": "^3.0.9",
         "@astrojs/react": "^4.4.2",
         "@astrojs/sitemap": "^3.6.0",
         "@astrojs/tailwind": "^6.0.2",
@@ -19,6 +20,7 @@
         "@upstash/redis": "^1.35.8",
         "@vercel/analytics": "^1.6.1",
         "@vercel/config": "^0.0.24",
+        "ai": "^6.0.37",
         "astro": "^5.16.6",
         "astro-capo": "^0.0.1",
         "astro-seo": "^0.8.4",

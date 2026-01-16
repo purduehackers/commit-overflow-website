@@ -255,7 +255,8 @@ export async function generateSummaryReceipt(
     b[0].localeCompare(a[0]),
   );
   const maxCommitsInDay = Math.max(...sortedDays.map(([, c]) => c));
-  const barMaxWidth = 20;
+  const labelWidth = 9; // "MM-DD XX " prefix before bar
+  const barMaxWidth = RECEIPT_WIDTH - 4 - labelWidth;
 
   output.push(receiptHeader("RECENT ACTIVITY"));
   for (const [day, count] of sortedDays.slice(0, 10)) {

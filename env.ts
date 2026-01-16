@@ -10,4 +10,5 @@ export const schema = {
     KV_REST_API_URL: envField.string({ context: "server", access: "secret" }),
     KV_REST_API_TOKEN: envField.string({ context: "server", access: "secret" }),
     GROQ_API_KEY: envField.string({ context: "server", access: "secret" }),
+    AI_GATEWAY_API_KEY: envField.string({ context: "server", access: "secret" }),
 };

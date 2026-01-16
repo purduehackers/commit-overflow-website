@@ -8,23 +8,38 @@ import { queryD1 } from "../lib/d1";
 const session = Astro.locals.session;
 const user = Astro.locals.user;
 
-if (!session || !user) {
-    return Astro.redirect("/login?callbackURL=/receipt");
-}
+const devUserOverride = import.meta.env.DEV ? Astro.url.searchParams.get("user") : null;
 
-interface AccountRow {
-    accountId: string;
-}
+let discordUserId: string | undefined;
 
-const accounts = await queryD1<AccountRow>(
-    "SELECT accountId FROM ba_account WHERE userId = ? AND providerId = 'discord'",
-    [user.id],
-);
+if (devUserOverride) {
+    const users = await queryD1<{ id: string }>(
+        "SELECT id FROM users WHERE discord_username = ? LIMIT 1",
+        [devUserOverride],
+    );
+    discordUserId = users[0]?.id;
+    if (!discordUserId) {
+        return Astro.redirect("/?error=user_not_found");
+    }
+} else {
+    if (!session || !user) {
+        return Astro.redirect("/login?callbackURL=/receipt");
+    }
 
-const discordUserId = accounts[0]?.accountId;
+    interface AccountRow {
+        accountId: string;
+    }
 
-if (!discordUserId) {
-    return Astro.redirect("/?error=no_discord_account");
+    const accounts = await queryD1<AccountRow>(
+        "SELECT accountId FROM ba_account WHERE userId = ? AND providerId = 'discord'",
+        [user.id],
+    );
+
+    discordUserId = accounts[0]?.accountId;
+
+    if (!discordUserId) {
+        return Astro.redirect("/?error=no_discord_account");
+    }
 }
 ---
 
