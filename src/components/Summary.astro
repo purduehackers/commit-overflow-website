@@ -1,0 +1,96 @@
+---
+// Hardcoded final event stats
+const stats = {
+    totalCommits: 1121,
+    festiveHackers: 59,
+    messagesSent: 6871,
+};
+---
+
+<section class="summary-section">
+    <h2><span class="green-squares">▓▓</span> COMMIT OVERFLOW 2025 HAS ENDED <span class="green-squares">▓▓</span></h2>
+    
+    <p class="summary-message">
+        Thanks to everyone who participated in 21 days of building!
+    </p>
+
+    <dl class="stats-tickers">
+        <div class="ticker">
+            <dt class="ticker-label">Total Commits</dt>
+            <dd class="ticker-value">{stats.totalCommits}</dd>
+        </div>
+        <div class="ticker">
+            <dt class="ticker-label">Festive Hackers</dt>
+            <dd class="ticker-value">{stats.festiveHackers}</dd>
+        </div>
+        <div class="ticker">
+            <dt class="ticker-label">Messages Sent</dt>
+            <dd class="ticker-value">{stats.messagesSent}</dd>
+        </div>
+    </dl>
+
+    <div class="cta-container">
+        <a href="/receipt" class="receipt-cta">[See Your Receipts]</a>
+    </div>
+</section>
+
+<style>
+    .summary-section {
+        margin: 1rem 0;
+        text-align: center;
+    }
+
+    .summary-section h2 {
+        margin-bottom: 1rem;
+    }
+
+    .green-squares {
+        color: var(--accent);
+    }
+
+    .summary-message {
+        color: var(--muted);
+        margin-bottom: 1.5rem;
+    }
+
+    .stats-tickers {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        flex-wrap: wrap;
+        margin: 1.5rem 0;
+    }
+
+    .ticker {
+        text-align: center;
+    }
+
+    .ticker-label {
+        color: var(--muted);
+        margin-bottom: 0.25rem;
+    }
+
+    .ticker-value {
+        color: var(--fg);
+        font-weight: normal;
+    }
+
+    .cta-container {
+        margin-top: 2rem;
+    }
+
+    .receipt-cta {
+        display: inline-block;
+        color: var(--accent);
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--accent);
+        text-decoration: none;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .receipt-cta:hover {
+        background-color: var(--accent);
+        color: var(--bg);
+        text-decoration: none;
+    }
+</style>

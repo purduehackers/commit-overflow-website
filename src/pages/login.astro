@@ -1,0 +1,54 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { LoginButton } from "../components/LoginButton";
+
+const callbackURL = Astro.url.searchParams.get("callbackURL") || "/receipt";
+---
+
+<Layout title="Sign In | Commit Overflow 2025">
+    <Header />
+
+    <section class="login-page">
+        <h2>Sign in to view your receipt</h2>
+        <LoginButton client:load callbackURL={callbackURL} />
+    </section>
+
+    <Footer />
+</Layout>
+
+<style>
+    .login-page {
+        text-align: center;
+        padding: 8rem 1rem 3rem;
+    }
+
+    .login-page h2 {
+        margin-bottom: 1rem;
+    }
+
+    .login-page p {
+        margin-bottom: 2rem;
+        color: var(--text-muted);
+    }
+
+    .login-page :global(.discord-btn) {
+        background: #5865F2;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
+        font-family: var(--font-mono);
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .login-page :global(.discord-btn:hover) {
+        background: #4752C4;
+    }
+
+    .note {
+        margin-top: 2rem;
+    }
+</style>

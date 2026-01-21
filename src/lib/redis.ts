@@ -13,6 +13,7 @@ export const TTL = {
     DISCORD_CHANNEL: 86400, // 24 hours
     DISCORD_ROLE: 86400, // 24 hours
     FORUM_THREADS: 3600, // 1 hour - updates more frequently
+    COMMIT_SUMMARY: 604800, // 7 days - summaries don't change
 } as const;
 
 export async function cacheGet<T>(key: string): Promise<T | null> {

@@ -1,0 +1,137 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { Receipt as ReceiptComponent } from "../components/Receipt";
+import { queryD1 } from "../lib/d1";
+
+const session = Astro.locals.session;
+const user = Astro.locals.user;
+
+const devUserOverride = import.meta.env.DEV ? Astro.url.searchParams.get("user") : null;
+
+let discordUserId: string | undefined;
+
+if (devUserOverride) {
+    const users = await queryD1<{ id: string }>(
+        "SELECT id FROM users WHERE discord_username = ? LIMIT 1",
+        [devUserOverride],
+    );
+    discordUserId = users[0]?.id;
+    if (!discordUserId) {
+        return Astro.redirect("/?error=user_not_found");
+    }
+} else {
+    if (!session || !user) {
+        return Astro.redirect("/login?callbackURL=/receipt");
+    }
+
+    interface AccountRow {
+        accountId: string;
+    }
+
+    const accounts = await queryD1<AccountRow>(
+        "SELECT accountId FROM ba_account WHERE userId = ? AND providerId = 'discord'",
+        [user.id],
+    );
+
+    discordUserId = accounts[0]?.accountId;
+
+    if (!discordUserId) {
+        return Astro.redirect("/?error=no_discord_account");
+    }
+}
+---
+
+<Layout title="Your Receipt | Commit Overflow 2025">
+    <Header />
+    
+    <section class="receipt-page">
+        <ReceiptComponent client:load discordUserId={discordUserId} />
+    </section>
+
+    <Footer />
+</Layout>
+
+<style>
+    .receipt-page {
+        margin: 2rem 0;
+    }
+
+    .receipt-page h2 {
+        margin-bottom: 1rem;
+    }
+
+    .receipt-page :global(.receipt-intro) {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .receipt-page :global(.receipt-message) {
+        color: var(--muted);
+        margin: 0.5rem 0;
+    }
+
+    .receipt-page :global(.receipt-viewer) {
+        border: 1px solid var(--border);
+        padding: 1rem;
+        width: fit-content;
+        margin: 0 auto;
+    }
+
+    .receipt-page :global(.receipt-toggle) {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5ch;
+        margin-bottom: 1rem;
+    }
+
+    .receipt-page :global(.receipt) {
+        font-size: 0.85rem;
+        line-height: 1.3;
+        overflow-x: auto;
+        white-space: pre;
+        background: var(--bg);
+        max-width: 100%;
+        margin: 0;
+    }
+
+    .receipt-page :global(.receipt.skeleton) {
+        opacity: 0.5;
+    }
+
+    .receipt-page :global(.receipt-section) {
+        text-align: center;
+    }
+
+    .receipt-page :global(.receipt-section h2) {
+        font-weight: normal;
+    }
+
+    .receipt-page :global(.download-container) {
+        margin-top: 1rem;
+        display: flex;
+        gap: 1rem;
+    }
+
+    .receipt-page :global(.download-btn) {
+        background: none;
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        font-family: inherit;
+        font-size: 0.85rem;
+        cursor: pointer;
+        padding: 0.5rem 1rem;
+        transition: background-color 0.2s, color 0.2s;
+    }
+
+    .receipt-page :global(.download-btn:hover:not(:disabled)) {
+        background-color: var(--accent);
+        color: var(--bg);
+    }
+
+    .receipt-page :global(.download-btn:disabled) {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>

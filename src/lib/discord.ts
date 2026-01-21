@@ -4,6 +4,133 @@ import { cacheGet, cacheSet, TTL } from "./redis";
 const DISCORD_API = "https://discord.com/api/v10";
 const FETCH_TIMEOUT_MS = 10000;
 
+const RATE_LIMIT_CONFIG = {
+    maxRetries: 3,
+    baseDelayMs: 1000,
+    maxDelayMs: 10000,
+    requestsPerSecond: 5,
+};
+
+interface QueuedRequest<T> {
+    execute: () => Promise<T>;
+    resolve: (value: T) => void;
+    reject: (error: Error) => void;
+    retries: number;
+}
+
+class RateLimitedQueue {
+    private queue: QueuedRequest<unknown>[] = [];
+    private processing = false;
+    private lastRequestTime = 0;
+    private rateLimitResetAt = 0;
+
+    async add<T>(execute: () => Promise<T>): Promise<T> {
+        return new Promise((resolve, reject) => {
+            this.queue.push({
+                execute,
+                resolve: resolve as (value: unknown) => void,
+                reject,
+                retries: 0,
+            });
+            this.processQueue();
+        });
+    }
+
+    private async processQueue(): Promise<void> {
+        if (this.processing || this.queue.length === 0) return;
+        this.processing = true;
+
+        while (this.queue.length > 0) {
+            const now = Date.now();
+
+            if (this.rateLimitResetAt > now) {
+                const waitTime = this.rateLimitResetAt - now;
+                await this.delay(waitTime);
+                continue;
+            }
+
+            const minInterval = 1000 / RATE_LIMIT_CONFIG.requestsPerSecond;
+            const timeSinceLastRequest = now - this.lastRequestTime;
+            if (timeSinceLastRequest < minInterval) {
+                await this.delay(minInterval - timeSinceLastRequest);
+            }
+
+            const request = this.queue.shift()!;
+            this.lastRequestTime = Date.now();
+
+            try {
+                const result = await request.execute();
+                request.resolve(result);
+            } catch (error) {
+                if (error instanceof RateLimitError) {
+                    this.rateLimitResetAt = Date.now() + error.retryAfterMs;
+
+                    if (request.retries < RATE_LIMIT_CONFIG.maxRetries) {
+                        request.retries++;
+                        this.queue.unshift(request);
+                    } else {
+                        request.reject(new Error("Max retries exceeded for rate limit"));
+                    }
+                } else if (error instanceof RetryableError && request.retries < RATE_LIMIT_CONFIG.maxRetries) {
+                    request.retries++;
+                    const backoffDelay = Math.min(
+                        RATE_LIMIT_CONFIG.baseDelayMs * Math.pow(2, request.retries),
+                        RATE_LIMIT_CONFIG.maxDelayMs,
+                    );
+                    await this.delay(backoffDelay);
+                    this.queue.unshift(request);
+                } else {
+                    request.reject(error instanceof Error ? error : new Error(String(error)));
+                }
+            }
+        }
+
+        this.processing = false;
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+}
+
+class RateLimitError extends Error {
+    constructor(public retryAfterMs: number) {
+        super(`Rate limited, retry after ${retryAfterMs}ms`);
+    }
+}
+
+class RetryableError extends Error {
+    constructor(message: string) {
+        super(message);
+    }
+}
+
+const discordQueue = new RateLimitedQueue();
+
+async function queuedDiscordFetch<T>(url: string): Promise<T | null> {
+    return discordQueue.add(async () => {
+        const response = await fetch(url, {
+            headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
+        });
+
+        if (response.status === 429) {
+            const retryAfter = response.headers.get("Retry-After");
+            const retryAfterMs = retryAfter ? parseFloat(retryAfter) * 1000 : 1000;
+            throw new RateLimitError(retryAfterMs);
+        }
+
+        if (response.status >= 500) {
+            throw new RetryableError(`Server error: ${response.status}`);
+        }
+
+        if (!response.ok) {
+            return null;
+        }
+
+        return response.json() as Promise<T>;
+    });
+}
+
 function createTimeoutSignal(): AbortSignal {
     return AbortSignal.timeout(FETCH_TIMEOUT_MS);
 }
@@ -184,15 +311,13 @@ export async function getDiscordMessage(
     if (cachedMessage) return cachedMessage;
 
     try {
-        const response = await fetch(`${DISCORD_API}/channels/${channelId}/messages/${messageId}`, {
-            headers: { Authorization: `Bot ${DISCORD_BOT_TOKEN}` },
-            signal: createTimeoutSignal(),
-        });
+        const message = await queuedDiscordFetch<DiscordMessage>(
+            `${DISCORD_API}/channels/${channelId}/messages/${messageId}`,
+        );
 
-        if (!response.ok) return null;
-
-        const message: DiscordMessage = await response.json();
-        await cacheSet(cacheKey, message, TTL.DISCORD_MESSAGE);
+        if (message) {
+            await cacheSet(cacheKey, message, TTL.DISCORD_MESSAGE);
+        }
         return message;
     } catch {
         return null;

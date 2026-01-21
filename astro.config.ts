@@ -1,6 +1,6 @@
 import { defineConfig, fontProviders } from "astro/config";
 import react from "@astrojs/react";
-import tailwind from "@astrojs/tailwind";
+import tailwindcss from "@tailwindcss/vite";
 import sitemap from "@astrojs/sitemap";
 import vercel from "@astrojs/vercel";
 import gabAstroCompress from "gab-astro-compress";
@@ -11,7 +11,7 @@ export default defineConfig({
     trailingSlash: "never",
     output: "server",
   adapter: vercel(),
-    integrations: [react(), tailwind(), sitemap(), gabAstroCompress()],
+    integrations: [react(), sitemap(), gabAstroCompress()],
     prefetch: {
         prefetchAll: true,
         defaultStrategy: "load",
@@ -30,6 +30,7 @@ export default defineConfig({
         validateSecrets: true,
     },
     vite: {
+        plugins: [tailwindcss()],
         build: {
             sourcemap: true,
         },
