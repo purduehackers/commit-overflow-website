@@ -109,8 +109,9 @@ if (devUserOverride) {
     }
 
     .receipt-page :global(.download-container) {
-        margin-top: 1.5rem;
-        text-align: center;
+        margin-top: 1rem;
+        display: flex;
+        gap: 1rem;
     }
 
     .receipt-page :global(.download-btn) {
@@ -118,7 +119,7 @@ if (devUserOverride) {
         border: 1px solid var(--accent);
         color: var(--accent);
         font-family: inherit;
-        font-size: inherit;
+        font-size: 0.85rem;
         cursor: pointer;
         padding: 0.5rem 1rem;
         transition: background-color 0.2s, color 0.2s;

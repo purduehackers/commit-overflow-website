@@ -63,7 +63,9 @@ export function Receipt({ discordUserId }: ReceiptProps) {
     const [receiptData, setReceiptData] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [streaming, setStreaming] = useState(false);
-    const [downloading, setDownloading] = useState(false);
+    const [generatingImage, setGeneratingImage] = useState(false);
+    const [imageCopied, setImageCopied] = useState(false);
+    const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [loadingDays, setLoadingDays] = useState<Set<string>>(new Set());
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -195,8 +197,8 @@ export function Receipt({ discordUserId }: ReceiptProps) {
         return display;
     }, [receiptData, loadingDays, spinner]);
 
-    const downloadReceipt = async () => {
-        setDownloading(true);
+    const copyImageToClipboard = async () => {
+        setGeneratingImage(true);
 
         try {
             const response = await fetch(
@@ -208,19 +210,28 @@ export function Receipt({ discordUserId }: ReceiptProps) {
             }
 
             const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `commit-overflow-${receiptType}-receipt.png`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            await navigator.clipboard.write([
+                new ClipboardItem({ [blob.type]: blob })
+            ]);
+            setImageCopied(true);
+            setTimeout(() => setImageCopied(false), 2000);
         } catch (err) {
-            console.error("Download failed:", err);
-            alert("Failed to generate image. Please try again.");
+            console.error("Copy image failed:", err);
+            alert("Failed to copy image to clipboard. Please try again.");
         } finally {
-            setDownloading(false);
+            setGeneratingImage(false);
+        }
+    };
+
+    const copyToClipboard = async () => {
+        if (!receiptData) return;
+        try {
+            await navigator.clipboard.writeText(receiptData);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Copy failed:", err);
+            alert("Failed to copy to clipboard.");
         }
     };
 
@@ -292,16 +303,25 @@ export function Receipt({ discordUserId }: ReceiptProps) {
             ) : (
                 <pre className="receipt">{displayReceipt()}</pre>
             )}
-            </div>
 
-            <div className="download-container">
-                <button
-                    className="download-btn"
-                    onClick={downloadReceipt}
-                    disabled={downloading || loading || streaming || !!error}
-                >
-                    {downloading ? "[Generating...]" : streaming ? "[Loading summaries...]" : "[Download as Image]"}
-                </button>
+                <div className="download-container">
+                    <button
+                        className="download-btn"
+                        onClick={copyImageToClipboard}
+                        disabled={generatingImage || loading || streaming || !!error}
+                        style={{ flex: 1 }}
+                    >
+                        {generatingImage ? "[Generating...]" : imageCopied ? "[Copied!]" : streaming ? "[Loading summaries...]" : "[Copy as Image]"}
+                    </button>
+                    <button
+                        className="download-btn"
+                        onClick={copyToClipboard}
+                        disabled={loading || streaming || !!error || !receiptData}
+                        style={{ flex: 1 }}
+                    >
+                        {copied ? "[Copied!]" : "[Copy to Clipboard]"}
+                    </button>
+                </div>
             </div>
         </section>
     );
