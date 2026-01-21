@@ -1,18 +1,19 @@
 import type { APIRoute } from "astro";
 import satori from "satori";
 import sharp from "sharp";
-import { readFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { generateSummaryReceipt, generateCommitsReceipt } from "../../../lib/receipt";
 import { ReceiptImage } from "../../../lib/ReceiptImage";
 
 let fontCache: ArrayBuffer | null = null;
 
-async function loadFont(): Promise<ArrayBuffer> {
+async function loadFont(baseUrl: string): Promise<ArrayBuffer> {
     if (fontCache) return fontCache;
-    const fontPath = fileURLToPath(new URL("../../../assets/fonts/FiraCode-Regular.ttf", import.meta.url));
-    const buffer = await readFile(fontPath);
-    fontCache = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const fontUrl = new URL("/fonts/FiraCode-Regular.ttf", baseUrl);
+    const response = await fetch(fontUrl);
+    if (!response.ok) {
+        throw new Error(`Failed to fetch font: ${response.status}`);
+    }
+    fontCache = await response.arrayBuffer();
     return fontCache;
 }
 
@@ -32,7 +33,7 @@ export const GET: APIRoute = async ({ url }) => {
             type === "commits"
                 ? generateCommitsReceipt(userId)
                 : generateSummaryReceipt(userId),
-            loadFont(),
+            loadFont(url.origin),
         ]);
 
         const lines = receiptText.split("\n");
