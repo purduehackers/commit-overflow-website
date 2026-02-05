@@ -13,7 +13,7 @@ export const TTL = {
     DISCORD_CHANNEL: 86400, // 24 hours
     DISCORD_ROLE: 86400, // 24 hours
     FORUM_THREADS: 3600, // 1 hour - updates more frequently
-    COMMIT_SUMMARY: 604800, // 7 days - summaries don't change
+    COMMIT_SUMMARY: 86400, // 1 day
 } as const;
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
@@ -26,6 +26,22 @@ export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): P
     } else {
         await redis.set(key, value);
     }
+}
+
+export async function cacheDel(key: string): Promise<void> {
+    await redis.del(key);
+}
+
+export async function cacheDelPattern(pattern: string): Promise<void> {
+    let cursor = "0";
+    do {
+        const result = await redis.scan(Number(cursor), { match: pattern, count: 100 });
+        const [nextCursor, keys] = result as [string, string[]];
+        if (keys.length > 0) {
+            await redis.del(...keys);
+        }
+        cursor = String(nextCursor);
+    } while (cursor !== "0");
 }
 
 export async function cached<T>(

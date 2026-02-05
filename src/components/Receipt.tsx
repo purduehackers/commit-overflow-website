@@ -73,7 +73,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
 
     const spinner = useSpinner(loadingDays.size > 0);
 
-    const fetchReceipt = useCallback(async () => {
+    const fetchReceipt = useCallback(async (regenerate = false) => {
         if (abortControllerRef.current) {
             abortControllerRef.current.abort();
         }
@@ -86,8 +86,10 @@ export function Receipt({ discordUserId }: ReceiptProps) {
         if (receiptType === "commits") {
             abortControllerRef.current = new AbortController();
             try {
+                const params = new URLSearchParams({ userId: discordUserId });
+                if (regenerate) params.set("regenerate", "true");
                 const response = await fetch(
-                    `/api/receipt/stream?userId=${discordUserId}`,
+                    `/api/receipt/stream?${params}`,
                     { signal: abortControllerRef.current.signal },
                 );
 
@@ -264,18 +266,28 @@ export function Receipt({ discordUserId }: ReceiptProps) {
 
             <div className="receipt-viewer">
                 <div className="receipt-toggle">
-                    <button
-                        className={`sort-btn ${receiptType === "summary" ? "active" : ""}`}
-                        onClick={() => setReceiptType("summary")}
-                    >
-                        [Summary]
-                    </button>
-                    <button
-                        className={`sort-btn ${receiptType === "commits" ? "active" : ""}`}
-                        onClick={() => setReceiptType("commits")}
-                    >
-                        [Full Log]
-                    </button>
+                    <div className="receipt-toggle-left">
+                        <button
+                            className={`sort-btn ${receiptType === "summary" ? "active" : ""}`}
+                            onClick={() => setReceiptType("summary")}
+                        >
+                            [Summary]
+                        </button>
+                        <button
+                            className={`sort-btn ${receiptType === "commits" ? "active" : ""}`}
+                            onClick={() => setReceiptType("commits")}
+                        >
+                            [Full Log]
+                        </button>
+                    </div>
+                    {receiptType === "commits" && !loading && !streaming && !error && receiptData && (
+                        <button
+                            className="sort-btn"
+                            onClick={() => fetchReceipt(true)}
+                        >
+                            [Regenerate]
+                        </button>
+                    )}
                 </div>
 
             {loading ? (
@@ -285,7 +297,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                     <pre style={{ color: "var(--error, #ff6b6b)" }}>
                         Error: {error}{" "}
                         <button
-                            onClick={fetchReceipt}
+                            onClick={() => fetchReceipt()}
                             style={{
                                 background: "none",
                                 border: "none",

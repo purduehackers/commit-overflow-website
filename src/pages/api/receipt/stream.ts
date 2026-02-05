@@ -6,7 +6,7 @@ import {
 import { getDiscordMessage } from "../../../lib/discord";
 import { summarizeCommitMessage } from "../../../lib/groq";
 import { queryD1 } from "../../../lib/d1";
-import { cacheGet, cacheSet, TTL } from "../../../lib/redis";
+import { cacheGet, cacheSet, cacheDelPattern, TTL } from "../../../lib/redis";
 
 interface DaySummaryCache {
     summaries: Map<number, string | null>;
@@ -35,6 +35,7 @@ async function resolveUserId(userId: string | null, username: string | null): Pr
 }
 
 export const GET: APIRoute = async ({ url }) => {
+    const regenerate = url.searchParams.get("regenerate") === "true";
     const userId = await resolveUserId(
         url.searchParams.get("userId"),
         url.searchParams.get("user"),
@@ -62,6 +63,10 @@ export const GET: APIRoute = async ({ url }) => {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
                 controller.close();
                 return;
+            }
+
+            if (regenerate) {
+                await cacheDelPattern(`receipt:day:${userId}:*`);
             }
 
             const commitsByDay = new Map<string, typeof receiptData.commits>();
