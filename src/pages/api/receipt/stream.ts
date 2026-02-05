@@ -59,14 +59,14 @@ export const GET: APIRoute = async ({ url }) => {
                 ),
             );
 
-            if (regenerate) {
-                await cacheDelPattern(`receipt:day:${userId}:*`);
-            }
-
             if (receiptData.commits.length === 0 || !receiptData.threadId) {
                 controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
                 controller.close();
                 return;
+            }
+
+            if (regenerate) {
+                await cacheDelPattern(`receipt:day:${userId}:*`);
             }
 
             const commitsByDay = new Map<string, typeof receiptData.commits>();

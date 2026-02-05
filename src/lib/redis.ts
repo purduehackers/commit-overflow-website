@@ -33,10 +33,15 @@ export async function cacheDel(key: string): Promise<void> {
 }
 
 export async function cacheDelPattern(pattern: string): Promise<void> {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-        await redis.del(...keys);
-    }
+    let cursor = "0";
+    do {
+        const result = await redis.scan(Number(cursor), { match: pattern, count: 100 });
+        const [nextCursor, keys] = result as [string, string[]];
+        if (keys.length > 0) {
+            await redis.del(...keys);
+        }
+        cursor = String(nextCursor);
+    } while (cursor !== "0");
 }
 
 export async function cached<T>(
