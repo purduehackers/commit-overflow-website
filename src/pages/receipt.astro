@@ -81,9 +81,14 @@ if (devUserOverride) {
 
     .receipt-page :global(.receipt-toggle) {
         display: flex;
-        justify-content: flex-end;
-        gap: 0.5ch;
+        justify-content: space-between;
+        align-items: center;
         margin-bottom: 1rem;
+    }
+
+    .receipt-page :global(.receipt-toggle-left) {
+        display: flex;
+        gap: 0.5ch;
     }
 
     .receipt-page :global(.receipt) {
