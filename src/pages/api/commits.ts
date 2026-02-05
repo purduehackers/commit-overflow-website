@@ -85,7 +85,7 @@ async function fetchPaginatedCommits(
             `SELECT user_id, committed_at, message_id, is_private, is_explicitly_private
              FROM commits
              WHERE approved_at IS NOT NULL AND is_private = 0 AND is_explicitly_private = 0
-             ORDER BY committed_at DESC
+             ORDER BY committed_at ASC
              LIMIT ? OFFSET ?`,
             [limit + 1, offset], // Fetch one extra to check if there are more
         ),
@@ -162,7 +162,7 @@ export const GET: APIRoute = async ({ url }) => {
         );
 
         const cacheKey = `commits:page:${page}:limit:${limit}`;
-        const cacheTTL = 15;
+        const cacheTTL = 86400;
 
         const result = await cached<PaginatedCommitsResponse>(
             cacheKey,
@@ -174,7 +174,7 @@ export const GET: APIRoute = async ({ url }) => {
             status: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Cache-Control": "public, max-age=10",
+                "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
             },
         });
     } catch (error) {

@@ -232,8 +232,10 @@ export function LiveFeed() {
 
     const { data, error, size, setSize, isValidating, mutate } =
         useSWRInfinite<PaginatedCommitsResponse>(getKey, fetcher, {
-            refreshInterval: 10000,
-            revalidateFirstPage: true,
+            refreshInterval: 0,
+            revalidateFirstPage: false,
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
         });
 
     const sentinelRef = useRef<HTMLDivElement>(null);
