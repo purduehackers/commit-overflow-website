@@ -1,38 +1,12 @@
 import type { APIRoute } from "astro";
 import { queryD1 } from "../../lib/d1";
 import { relativeTime } from "../../lib/dates";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import rehypeSanitize from "rehype-sanitize";
-import rehypeStringify from "rehype-stringify";
 import { cached } from "../../lib/redis";
-import {
-    rehypeDiscord,
-    rehypeGitLinks,
-    rehypeLinkAttributes,
-    remarkAutolink,
-    smartTruncate,
-} from "../../lib/transform";
+import { markdownToHtml, smartTruncate } from "../../lib/transform";
 import { getDiscordMessage } from "../../lib/discord";
 
 const DEFAULT_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
-
-const markdownProcessor = unified()
-    .use(remarkParse)
-    .use(remarkAutolink)
-    .use(remarkRehype)
-    .use(rehypeSanitize)
-    .use(rehypeDiscord)
-    .use(rehypeGitLinks)
-    .use(rehypeLinkAttributes)
-    .use(rehypeStringify);
-
-async function markdownToHtml(markdown: string): Promise<string> {
-    const result = await markdownProcessor.process(markdown);
-    return result.toString();
-}
 
 interface CommitRow {
     user_id: string;

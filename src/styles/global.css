@@ -518,30 +518,35 @@ ul ul ul li::before {
 }
 
 /* Discord mentions */
-.mention {
+.discord-user,
+.discord-role,
+.discord-channel,
+.discord-command {
     padding: 0.1em 0.3em;
     border-radius: 3px;
     font-weight: 500;
 }
 
-.mention-user,
-.mention-channel {
+.discord-user,
+.discord-channel {
     background: rgba(88, 101, 242, 0.15);
     color: #5865f2;
 }
 
-a.mention-channel {
-    text-decoration: none;
+.discord-role {
+    background: color-mix(in srgb, var(--role-color, transparent) 15%, transparent);
+    color: var(--role-color, var(--fg));
 }
 
-a.mention-channel:hover {
-    background: rgba(88, 101, 242, 0.3);
-    text-decoration: none;
+.discord-timestamp {
+    padding: 0.1em 0.3em;
+    border-radius: 3px;
+    background: rgba(88, 101, 242, 0.1);
 }
 
-.mention-role {
-    background: rgba(0, 0, 0, 0.1);
-    color: var(--fg);
+.discord-command {
+    background: rgba(88, 101, 242, 0.15);
+    color: #5865f2;
 }
 
 /* Feed */
