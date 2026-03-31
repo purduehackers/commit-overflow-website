@@ -11,40 +11,12 @@ import {
     EVENT_END,
     DEFAULT_TIMEZONE,
 } from "../../lib/dates";
-import { unified } from "unified";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
-import rehypeSanitize from "rehype-sanitize";
-import rehypeStringify from "rehype-stringify";
 import { cached } from "../../lib/redis";
-import {
-    rehypeDiscord,
-    rehypeGitLinks,
-    rehypeLinkAttributes,
-    remarkAutolink,
-    smartTruncate,
-} from "../../lib/transform";
+import { markdownToHtml, smartTruncate } from "../../lib/transform";
 import type { SortKey } from "../../components/Leaderboard";
 
 // Cache TTL for the full stats response (in seconds)
 const STATS_CACHE_TTL = 15;
-
-// Reuse a single unified processor instance for all markdown conversions
-// This avoids the overhead of recreating the pipeline for each message
-const markdownProcessor = unified()
-    .use(remarkParse)
-    .use(remarkAutolink)
-    .use(remarkRehype)
-    .use(rehypeSanitize)
-    .use(rehypeDiscord)
-    .use(rehypeGitLinks)
-    .use(rehypeLinkAttributes)
-    .use(rehypeStringify);
-
-async function markdownToHtml(markdown: string): Promise<string> {
-    const result = await markdownProcessor.process(markdown);
-    return result.toString();
-}
 
 interface CommitRow {
     user_id: string;

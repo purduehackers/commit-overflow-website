@@ -260,7 +260,7 @@ export function Receipt({ discordUserId }: ReceiptProps) {
                     Commit Overflow 2025 has ended — but the building never stops.
                 </p>
                 <p className="receipt-message">
-                    Keep shipping in <a href="https://discord.com/channels/772576325897945119/1052236377338683514" target="_blank" rel="noopener noreferrer" className="mention mention-channel">#🏁checkpoints</a> and <a href="https://discord.com/channels/772576325897945119/904896819165814794" target="_blank" rel="noopener noreferrer" className="mention mention-channel">#🚢ship</a>!
+                    Keep shipping in <a href="https://discord.com/channels/772576325897945119/1052236377338683514" target="_blank" rel="noopener noreferrer" className="discord-channel">#🏁checkpoints</a> and <a href="https://discord.com/channels/772576325897945119/904896819165814794" target="_blank" rel="noopener noreferrer" className="discord-channel">#🚢ship</a>!
                 </p>
             </div>
 
