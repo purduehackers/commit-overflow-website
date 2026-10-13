@@ -1,10 +1,23 @@
-import { Redis } from "@upstash/redis";
-import { KV_REST_API_TOKEN, KV_REST_API_URL } from "astro:env/server";
+import { createClient } from "redis";
+import { REDIS_URL } from "astro:env/server";
 
-const redis = new Redis({
-    url: KV_REST_API_URL,
-    token: KV_REST_API_TOKEN,
+const redis = createClient({
+    url: REDIS_URL,
+    socket: { connectTimeout: 5000, reconnectStrategy: false },
+    disableOfflineQueue: true,
 });
+redis.on("error", () => console.error("Redis connection failed"));
+let connecting: Promise<unknown> | undefined;
+
+async function getRedis() {
+    if (!redis.isOpen) {
+        connecting ??= redis.connect().finally(() => {
+            connecting = undefined;
+        });
+    }
+    await connecting;
+    return redis.withCommandOptions({ timeout: 5000 });
+}
 
 // TTL constants in seconds
 export const TTL = {
@@ -17,30 +30,41 @@ export const TTL = {
 } as const;
 
 export async function cacheGet<T>(key: string): Promise<T | null> {
-    return redis.get<T>(key);
-}
-
-export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
-    if (ttlSeconds !== undefined) {
-        await redis.set(key, value, { ex: ttlSeconds });
-    } else {
-        await redis.set(key, value);
+    const raw = await (await getRedis()).get(key);
+    if (raw === null) return null;
+    // Upstash stored objects as JSON and strings verbatim. Existing cache
+    // entries copied during migration must support both representations.
+    try {
+        const decoded: unknown = JSON.parse(raw);
+        if (typeof decoded === "number" && String(decoded) !== raw) return raw as T;
+        return decoded as T;
+    } catch {
+        return raw as T;
     }
 }
 
+export async function cacheSet<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
+    const encoded = typeof value === "string" ? value : JSON.stringify(value);
+    if (encoded === undefined) throw new Error("Cache values must be JSON serializable");
+    await (await getRedis()).set(key, encoded, ttlSeconds === undefined ? {} : { EX: ttlSeconds });
+}
+
 export async function cacheDel(key: string): Promise<void> {
-    await redis.del(key);
+    await (await getRedis()).del(key);
 }
 
 export async function cacheDelPattern(pattern: string): Promise<void> {
     let cursor = "0";
     do {
-        const result = await redis.scan(Number(cursor), { match: pattern, count: 100 });
-        const [nextCursor, keys] = result as [string, string[]];
+        const client = await getRedis();
+        const { cursor: nextCursor, keys } = await client.scan(cursor, {
+            MATCH: pattern,
+            COUNT: 100,
+        });
         if (keys.length > 0) {
-            await redis.del(...keys);
+            await client.del(keys);
         }
-        cursor = String(nextCursor);
+        cursor = nextCursor;
     } while (cursor !== "0");
 }
 
